@@ -1,0 +1,99 @@
+@startuml
+autonumber
+
+participant BookCreated as BookC
+participant AuthorCreated as AuthorC
+participant GenreCreated as GenreC
+participant MessageBroker as MB
+participant BookQuery as BookQ
+
+BookC -> MB : subscribe(BookCreated, GenreTempCreated, AuthorTempCreated)
+
+AuthorC -> MB : subscribe(AuthorCreatsed, BookTempCreated, BookCreated)
+
+GenreC -> MB : subscribe(GenreCreated, BookTempCreated, BookCreated)
+
+BookQ -> MB : subscribe(BookCreated)
+
+'-----------------------------------------
+' BookC recebe POST para criar livro
+'-----------------------------------------
+-> BookC : POST /book (bookInfo, authorInfo, genreInfo)
+
+activate BookC
+
+    BookC --> BookC : saveTemp (book)
+
+    <- BookC: 202 Created
+
+deactivate BookC
+
+'-----------------------------------------
+' BookC inicia transação
+'-----------------------------------------
+-> BookC : POST
+
+activate BookC
+
+    BookC -> BookC : beginTransaction()
+
+    BookC -> BookC : saveTemp(Book)
+
+    BookC -> BookC : saveToOutBox (book, event)
+
+    BookC -> MB : publish(BookTempCreated, AuthorInfo, GenreInfo)
+
+    BookC -> BookC : commit()
+
+    BookC -> BookC : 202 Accepted
+
+deactivate BookC
+
+'-----------------------------------------
+' MB notifica outros microserviços
+'-----------------------------------------
+MB -> GenreC : notify(BookTempCreated, GenreInfo)
+
+activate GenreC
+
+    GenreC -> GenreC : saveTemp (Genre)
+
+    GenreC -> MB : publish(GenreTempCreated)
+
+deactivate GenreC
+
+MB -> AuthorC : notify(BookTempCreated, info...)
+
+activate AuthorC
+
+    AuthorC -> AuthorC : saveTemp(Author)
+
+    AuthorC -> MB : publish(AuthorTempCreated, AuthorCreated)
+
+deactivate AuthorC
+
+'-----------------------------------------
+' BookC recebe notificações e atualiza temp
+'-----------------------------------------
+MB -> BookC : notify(AuthorTempCreated, AuthorInfo, BookID)
+
+activate BookC
+    BookC -> BookC : updateTemp(AuthorInfo, BookID)
+    BookC -> BookC : verifyConclusionCondition()
+deactivate BookC
+
+MB -> BookC : notify(GenreTempCreated, GenreInfo, BookID)
+
+activate BookC
+    BookC -> BookC : updateTemp(GenreInfo, BookID)
+    BookC -> BookC : verifyConclusionCondition() == TRUE
+    BookC -> MB : publish(BookCreated from TempToFinal)
+deactivate BookC
+
+'-----------------------------------------
+' MB finaliza eventos temporários nos outros microserviços
+'-----------------------------------------
+MB -> GenreC : finalizeFromTemp()
+MB -> AuthorC : finalizeFromTemp()
+
+@enduml
