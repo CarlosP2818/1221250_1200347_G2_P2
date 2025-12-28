@@ -35,32 +35,32 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 public class CreateUserRequest {
-    @NonNull
-    @NotBlank
-    @Email
-    @Setter
-    @Getter
-    private String username;
+	@NonNull
+	@NotBlank
+	@Email
+	@Setter
+	@Getter
+	private String username;
 
-    @NonNull
-    @NotBlank
-    @Setter
-    @Getter
-    private String password;
+	@NonNull
+	@NotBlank
+	@Setter
+	@Getter
+	private String password;
 
-    @NonNull
-    @NotBlank
-    private String name;
+	@NonNull
+	@NotBlank
+	private String name;
 
-    @Getter
-    @Setter
-    private String role;
+	@Getter
+	@Setter
+	private String role;
 
-    private Set<String> authorities = new HashSet<>();
+	private Set<String> authorities = new HashSet<>();
 
-    public CreateUserRequest(final String username, final String fullName, final String password) {
-        this.username = username;
-        this.name = fullName;
-        this.password = password;
-    }
+	public CreateUserRequest(final String username, final String fullName, final String password) {
+		this.username = username;
+		this.name = fullName;
+		this.password = password;
+	}
 }

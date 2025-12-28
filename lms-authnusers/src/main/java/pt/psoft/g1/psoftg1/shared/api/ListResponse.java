@@ -20,10 +20,10 @@
  */
 package pt.psoft.g1.psoftg1.shared.api;
 
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * Based on https://github.com/Yoh0xFF/java-spring-security-example
@@ -31,5 +31,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ListResponse<T> {
-    private List<T> items;
+	private List<T> items;
 }

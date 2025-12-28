@@ -32,6 +32,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SearchUsersQuery {
-    private String username;
-    private String fullName;
+	private String username;
+	private String fullName;
 }

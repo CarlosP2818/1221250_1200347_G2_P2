@@ -21,9 +21,6 @@
 package pt.psoft.g1.psoftg1.usermanagement.services;
 
 import java.util.Set;
-
-import jakarta.validation.constraints.NotBlank;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,8 +33,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EditUserRequest {
-    private String name;
-    private String username;
-    private String password;
-    private Set<String> authorities;
+	private String name;
+	private String username;
+	private String password;
+	private Set<String> authorities;
 }

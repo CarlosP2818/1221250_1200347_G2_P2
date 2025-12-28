@@ -8,12 +8,13 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.nio.file.Path;
 
 @Entity
-public class Photo {
+public class Photo implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy= GenerationType.AUTO)
     private long pk;
 
     @NotNull
@@ -21,10 +22,10 @@ public class Photo {
     @Getter
     private String photoFile;
 
-    protected Photo() {
-    }
+    protected Photo (){}
 
-    public Photo(Path photoPath) {
+    public Photo (Path photoPath){
         setPhotoFile(photoPath.toString());
     }
 }
+

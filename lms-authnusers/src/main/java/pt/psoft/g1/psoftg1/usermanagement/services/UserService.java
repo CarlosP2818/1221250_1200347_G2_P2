@@ -21,6 +21,8 @@
 package pt.psoft.g1.psoftg1.usermanagement.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,115 +52,124 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
-    private final UserRepository userRepo;
-    private final EditUserMapper userEditMapper;
+	private final UserRepository userRepo;
+	private final EditUserMapper userEditMapper;
 
-    private final ForbiddenNameRepository forbiddenNameRepository;
+	private final ForbiddenNameRepository forbiddenNameRepository;
 
-    private final PasswordEncoder passwordEncoder;
+	private final PasswordEncoder passwordEncoder;
 
-    public List<User> findByName(String name) {
-        return this.userRepo.findByNameName(name);
-    }
+	private final UserEventsPublisher userEventsPublisher;
 
-    public List<User> findByNameLike(String name) {
-        return this.userRepo.findByNameNameContains(name);
-    }
+	public List<User> findByName(String name){
+		return this.userRepo.findByNameName(name);
+	}
+	public List<User> findByNameLike(String name) { return this.userRepo.findByNameNameContains(name); }
 
-    @Transactional
-    public User create(final CreateUserRequest request) {
-        if (userRepo.findByUsername(request.getUsername()).isPresent()) {
-            throw new ConflictException("Username already exists!");
-        }
+	@Transactional
+	@CacheEvict(value = {"users", "usersByUsername"}, allEntries = true)
+	public User create(final CreateUserRequest request) {
+		if (userRepo.findByUsername(request.getUsername()).isPresent()) {
+			throw new ConflictException("Username already exists!");
+		}
 
-        Iterable<String> words = List.of(request.getName().split("\\s+"));
-        for (String word : words) {
-            if (!forbiddenNameRepository.findByForbiddenNameIsContained(word).isEmpty()) {
-                throw new IllegalArgumentException("Name contains a forbidden word");
-            }
-        }
+		Iterable<String> words = List.of(request.getName().split("\\s+"));
+		for (String word : words){
+			if(!forbiddenNameRepository.findByForbiddenNameIsContained(word).isEmpty()) {
+				throw new IllegalArgumentException("Name contains a forbidden word");
+			}
+		}
 
-        User user;
-        switch (request.getRole()) {
-        case Role.READER: {
-            user = Reader.newReader(request.getUsername(), request.getPassword(), request.getName());
-            break;
-        }
-        case Role.LIBRARIAN: {
-            user = Librarian.newLibrarian(request.getUsername(), request.getPassword(), request.getName());
-            break;
-        }
-        default: {
-            return null;
-        }
-        }
+		User user;
+		switch(request.getRole()) {
+			case Role.READER: {
+				user = Reader.newReader(request.getUsername(), request.getPassword(), request.getName());
+				break;
+			}
+			case Role.LIBRARIAN: {
+				user = Librarian.newLibrarian(request.getUsername(), request.getPassword(), request.getName());
+				break;
+			}
+			default: {
+				return null;
+			}
+		}
 
-        // final User user = userEditMapper.create(request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        // user.addAuthority(new Role(request.getRole()));
+		//final User user = userEditMapper.create(request);
+		user.setPassword(passwordEncoder.encode(request.getPassword()));
+		//user.addAuthority(new Role(request.getRole()));
 
-        return userRepo.save(user);
-    }
+		user = userRepo.save(user);
 
-    @Transactional
-    public User update(final Long id, final EditUserRequest request) {
-        final User user = userRepo.getById(id);
-        userEditMapper.update(request, user);
+		if (user.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals(Role.READER))) {
+			userEventsPublisher.publishReaderUserCreated(user);
+		}
 
-        return userRepo.save(user);
-    }
+		return user;
+	}
 
-    @Transactional
-    public User delete(final Long id) {
-        final User user = userRepo.getById(id);
+	@Transactional
+	@CacheEvict(value = {"users", "usersByUsername"}, allEntries = true)
+	public User update(final Long id, final EditUserRequest request) {
+		final User user = userRepo.getById(id);
+		userEditMapper.update(request, user);
 
-        // user.setUsername(user.getUsername().replace("@", String.format("_%s@",
-        // user.getId().toString())));
-        user.setEnabled(false);
-        return userRepo.save(user);
-    }
+		return userRepo.save(user);
+	}
 
-    @Override
-    public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
-        return userRepo.findByUsername(username).orElseThrow(
-                () -> new UsernameNotFoundException(String.format("User with username - %s, not found", username)));
-    }
+	@Transactional
+	@CacheEvict(value = {"users", "usersByUsername"}, allEntries = true)
+	public User delete(final Long id) {
+		final User user = userRepo.getById(id);
 
-    public boolean usernameExists(final String username) {
-        return userRepo.findByUsername(username).isPresent();
-    }
+		// user.setUsername(user.getUsername().replace("@", String.format("_%s@",
+		// user.getId().toString())));
+		user.setEnabled(false);
+		return userRepo.save(user);
+	}
 
-    public User getUser(final Long id) {
-        return userRepo.getById(id);
-    }
+	@Override
+	@CacheEvict(value = {"users", "usersByUsername"}, allEntries = true)
+	public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
+		return userRepo.findByUsername(username).orElseThrow(
+				() -> new UsernameNotFoundException(String.format("User with username - %s, not found", username)));
+	}
 
-    public Optional<User> findByUsername(final String username) {
-        return userRepo.findByUsername(username);
-    }
+	public boolean usernameExists(final String username) {
+		return userRepo.findByUsername(username).isPresent();
+	}
 
-    public List<User> searchUsers(Page page, SearchUsersQuery query) {
-        if (page == null) {
-            page = new Page(1, 10);
-        }
-        if (query == null) {
-            query = new SearchUsersQuery("", "");
-        }
-        return userRepo.searchUsers(page, query);
-    }
+	@Cacheable(value = "users", key = "#id")
+	public User getUser(final Long id) {
+		return userRepo.getById(id);
+	}
 
-    public User getAuthenticatedUser(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal()instanceof Jwt jwt)) {
-            throw new AccessDeniedException("User is not logged in");
-        }
+	@Cacheable(value = "usersByUsername", key = "#username")
+	public Optional<User> findByUsername(final String username) { return userRepo.findByUsername(username); }
 
-        // split is present because jwt is storing the id before the username, separated by a comma
+	public List<User> searchUsers(Page page, SearchUsersQuery query) {
+		if (page == null) {
+			page = new Page(1, 10);
+		}
+		if (query == null) {
+			query = new SearchUsersQuery("", "");
+		}
+		return userRepo.searchUsers(page, query);
+	}
+
+	public User getAuthenticatedUser(Authentication authentication) {
+		if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+			throw new AccessDeniedException("User is not logged in");
+		}
+
+		// split is present because jwt is storing the id before the username, separated by a comma
         String loggedUsername = jwt.getClaimAsString("sub").split(",")[1];
 
-        Optional<User> loggedUser = findByUsername(loggedUsername);
-        if (loggedUser.isEmpty()) {
-            throw new AccessDeniedException("User is not logged in");
-        }
+		Optional<User> loggedUser = findByUsername(loggedUsername);
+		if (loggedUser.isEmpty()) {
+			throw new AccessDeniedException("User is not logged in");
+		}
 
-        return loggedUser.get();
-    }
+		return loggedUser.get();
+	}
 }

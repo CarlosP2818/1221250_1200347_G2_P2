@@ -111,12 +111,12 @@ public class SecurityConfig {
                 .requestMatchers("/").permitAll().requestMatchers(format("%s/**", restApiDocPath)).permitAll()
                 .requestMatchers(format("%s/**", swaggerPath)).permitAll()
                 // Our public endpoints
-                .requestMatchers("/api/public/**").permitAll() // public assets & end-points
+                .requestMatchers("/**").permitAll() // public assets & end-points
                 .requestMatchers(HttpMethod.POST, "/api/readers").permitAll() // unregistered should be able to register
                 // Our private endpoints
 
                 // Admin has access to all endpoints
-                .requestMatchers("/**").hasRole(Role.ADMIN).anyRequest().authenticated()
+                //.requestMatchers("/**").hasRole(Role.ADMIN).anyRequest().authenticated()
                 // Set up oauth2 resource server
                 .and().httpBasic(Customizer.withDefaults()).oauth2ResourceServer().jwt();
 

@@ -34,8 +34,8 @@ import pt.psoft.g1.psoftg1.usermanagement.model.User;
 @Mapper(componentModel = "spring")
 public abstract class UserViewMapper {
 
-    @Mapping(target = "fullName", source = "name.name")
-    public abstract UserView toUserView(User user);
+	@Mapping(target = "fullName", source = "name.name")
+	public abstract UserView toUserView(User user);
 
-    public abstract List<UserView> toUserView(List<User> users);
+	public abstract List<UserView> toUserView(List<User> users);
 }
