@@ -1,25 +1,35 @@
 package pt.psoft.g1.psoftg1.genremanagement.services;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pt.psoft.g1.psoftg1.bookmanagement.services.GenreBookCountDTO;
-import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
+import pt.psoft.g1.psoftg1.genremanagement.api.TempGenre;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.genremanagement.repositories.GenreRepository;
-import pt.psoft.g1.psoftg1.shared.services.Page;
+import pt.psoft.g1.psoftg1.genremanagement.repositories.TempGenreRepository;
+import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class GenreServiceImpl implements GenreService {
 
     private final GenreRepository genreRepository;
+    private final PhotoRepository photoRepository;
+    private final RabbitMQPublisher rabbitMQPublisher;
+
+    @Autowired
+    private RabbitTemplate template;
+
+    @Autowired
+    private DirectExchange direct;
+
+    @Autowired
+    private TempGenreRepository tempGenreRepository;
 
     public Optional<Genre> findByString(String name) {
         return genreRepository.findByString(name);
@@ -35,6 +45,42 @@ public class GenreServiceImpl implements GenreService {
 //        Pageable pageableRules = PageRequest.of(0, 5);
 //        return this.genreRepository.findTop5GenreByBookCount(pageableRules).getContent();
 //    }
+
+    @Override
+    public Optional<Genre> findByName(String name) {
+        return genreRepository.findByString(name);
+    }
+
+    @Override
+    public TempGenre createTempGenre(String genre, UUID sagaId) {
+
+        Optional<TempGenre> existing = tempGenreRepository.findBySagaId(sagaId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        TempGenre temp = new TempGenre();
+        temp.setGenre(genre);
+        temp.setSagaId(sagaId);
+
+        TempGenre saved = tempGenreRepository.save(temp);
+        rabbitMQPublisher.publishTempGenreCreated(saved);
+
+        return saved;
+    }
+
+    @Override
+    public Genre createGenre(Genre genre) {
+
+        Optional<Genre> existing = genreRepository.findByString(genre.getGenre());
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        Genre savedGenre = genreRepository.save(genre);
+        rabbitMQPublisher.publishGenreCreated(savedGenre);
+        return savedGenre;
+    }
 
     @Override
     public Genre save(Genre genre) {

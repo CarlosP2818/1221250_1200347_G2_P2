@@ -1,11 +1,10 @@
 package pt.psoft.g1.psoftg1.genremanagement.services;
 
-import pt.psoft.g1.psoftg1.bookmanagement.services.GenreBookCountDTO;
+import pt.psoft.g1.psoftg1.genremanagement.api.TempGenre;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
-import pt.psoft.g1.psoftg1.shared.services.Page;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface GenreService {
     Iterable<Genre> findAll();
@@ -13,6 +12,13 @@ public interface GenreService {
     Genre save(Genre genre);
 
     Optional<Genre> findByString(String name);
+
+    Optional<Genre> findByName(String name);
+
+    TempGenre createTempGenre(String genre, UUID sagaId);
+
+    Genre createGenre(Genre genre);
+
 
 //    List<GenreBookCountDTO> findTopGenreByBooks();
 

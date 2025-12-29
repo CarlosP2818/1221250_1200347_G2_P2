@@ -3,6 +3,9 @@ package pt.psoft.g1.psoftg1.genremanagement.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
+import lombok.Setter;
+
+import java.util.UUID;
 
 @Entity
 @Table
@@ -17,6 +20,16 @@ public class Genre {
     @Column(unique = true, nullable = false, length = GENRE_MAX_LENGTH)
     @Getter
     String genre;
+
+    @Setter
+    @Column(unique = true)
+    @Getter
+    private UUID sagaId;
+
+    // ID da saga TEMP
+    @Enumerated(EnumType.STRING)
+    @Getter
+    private GenreStatus status = GenreStatus.ACTIVE;
 
     protected Genre() {
     }

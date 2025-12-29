@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/lms-books/pom.xml" />
         <option value="$PROJECT_DIR$/lms-reader/pom.xml" />
         <option value="$PROJECT_DIR$/lms-authors/pom.xml" />
+        <option value="$PROJECT_DIR$/lms-genre/pom.xml" />
       </list>
     </option>
   </component>
