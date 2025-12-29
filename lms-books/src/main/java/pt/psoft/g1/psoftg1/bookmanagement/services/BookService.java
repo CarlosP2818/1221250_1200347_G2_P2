@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface BookService {
 
-    Book create(CreateBookRequest request, String isbn); // REST request
+    Book create(CreateBookRequest request); // REST request
 
     Book create(BookViewAMQP bookViewAMQP); // AMQP request
 
@@ -22,13 +22,15 @@ public interface BookService {
 
     Book update(BookViewAMQP bookViewAMQP);
 
-    List<Book> findByGenre(String genre);
+    List<Book> findByGenre(Long genre);
 
     List<Book> findByTitle(String title);
 
-    List<Book> findByAuthorName(String authorName);
+    List<Book> findByAuthorsIds(List<Long> authorsIds);
 
     Book removeBookPhoto(String isbn, long desiredVersion);
 
     List<Book> searchBooks(Page page, SearchBooksQuery query);
+
+    Book save(Book book);
 }

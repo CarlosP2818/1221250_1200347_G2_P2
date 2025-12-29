@@ -63,7 +63,7 @@ public  class RabbitmqClientConfig {
 
         @Bean
         public BookRabbitmqController receiver(BookService bookService, @Qualifier("autoDeleteQueue_Book_Created") Queue autoDeleteQueue_Book_Created) {
-            return new BookRabbitmqController(bookService);
+            return new BookRabbitmqController();
         }
     }
 }
