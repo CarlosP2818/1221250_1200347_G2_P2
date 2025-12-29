@@ -14,9 +14,4 @@ import java.util.Optional;
 public interface SpringDataAuthorRepository extends AuthorRepository, CrudRepository<Author, Long> {
     @Override
     Optional<Author> findByAuthorNumber(Long authorNumber);
-
-    @Query("SELECT DISTINCT coAuthor FROM Book b " + "JOIN b.authors coAuthor "
-            + "WHERE b IN (SELECT b FROM Book b JOIN b.authors a WHERE a.authorNumber = :authorNumber) "
-            + "AND coAuthor.authorNumber <> :authorNumber")
-    List<Author> findCoAuthorsByAuthorNumber(Long authorNumber);
 }

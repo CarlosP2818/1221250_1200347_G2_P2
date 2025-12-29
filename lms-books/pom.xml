@@ -211,7 +211,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>pt.psoft.g1.psoftg1.LMSBooks</mainClass>
+					<mainClass>pt.psoft.g1.psoftg1.LMSAuthors</mainClass>
 					<layout>ZIP</layout>
 				</configuration>
 
@@ -224,7 +224,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>pt.psoft.g1.psoftg1.LMSBooks</mainClass>
+							<mainClass>pt.psoft.g1.psoftg1.LMSAuthors</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

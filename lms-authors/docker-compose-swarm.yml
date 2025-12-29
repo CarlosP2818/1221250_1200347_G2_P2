@@ -1,6 +1,6 @@
 services:
-  lmsbooks:
-    image: lmsbooks:latest
+  lmsauthors:
+    image: lmsauthors:latest
     environment:
       - SPRING_PROFILES_ACTIVE=bootstrap
       - spring.datasource.url=jdbc:postgresql://postgres:${POSTGRES_PORT:-5432}/postgres
@@ -13,7 +13,7 @@ services:
     deploy:
       replicas: 2
     ports:
-      - "8087:8080"  # Expose the lmsbooks service on port 8087
+      - "8087:8080"  # Expose the lmsauthors service on port 8087
     networks:
       - lms_network
 

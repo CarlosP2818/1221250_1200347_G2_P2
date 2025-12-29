@@ -1,11 +1,13 @@
 package pt.psoft.g1.psoftg1.authormanagement.services;
 
 import pt.psoft.g1.psoftg1.authormanagement.api.AuthorLendingView;
+import pt.psoft.g1.psoftg1.authormanagement.api.BookShortView;
+import pt.psoft.g1.psoftg1.authormanagement.api.TempAuthor;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface AuthorService {
 
@@ -19,9 +21,9 @@ public interface AuthorService {
 
     Author partialUpdate(Long authorNumber, UpdateAuthorRequest resource, long desiredVersion);
 
-    List<Book> findBooksByAuthorNumber(Long authorNumber);
-
-    List<Author> findCoAuthorsByAuthorNumber(Long authorNumber);
+    List<BookShortView> findBooksByAuthorNumber(Long authorNumber);
 
     Optional<Author> removeAuthorPhoto(Long authorNumber, long desiredVersion);
+
+    TempAuthor createTempAuthor(String name, String bio, UUID sagaId);
 }

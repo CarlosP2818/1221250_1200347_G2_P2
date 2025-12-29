@@ -6,8 +6,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
-import pt.psoft.g1.psoftg1.bookmanagement.api.BookShortView;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.shared.api.MapperInterface;
 
 import java.util.HashMap;
@@ -24,15 +22,15 @@ public abstract class AuthorViewMapper extends MapperInterface {
 
     @Mapping(target = "_links", source = "author", qualifiedByName = "mapAuthorLinks")
     @Mapping(target = "books", source = "books", qualifiedByName = "toBookShortViewList")
-    public abstract CoAuthorView toCoAuthorView(Author author, List<Book> books);
+    public abstract CoAuthorView toCoAuthorView(Author author, List<BookShortView> books);
 
     @Named(value = "toBookShortView")
     @Mapping(target = "_links", source = ".", qualifiedByName = "mapBookShortLink")
-    public abstract BookShortView toBookShortView(Book book);
+    public abstract BookShortView toBookShortView(BookShortView book);
 
     @Named(value = "toBookShortViewList")
     @IterableMapping(qualifiedByName = "toBookShortView")
-    public abstract List<BookShortView> toBookShortView(List<Book> books);
+    public abstract List<BookShortView> toBookShortView(List<BookShortView> books);
 
     public abstract AuthorCoAuthorBooksView toAuthorCoAuthorBooksView(Author author, List<CoAuthorView> coauthors);
 
@@ -60,7 +58,7 @@ public abstract class AuthorViewMapper extends MapperInterface {
     }
 
     @Named(value = "mapBookShortLink")
-    public String mapShortBookLink(final Book book) {
+    public String mapShortBookLink(final BookShortView book) {
         return ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/books/").path(book.getIsbn())
                 .toUriString();
     }

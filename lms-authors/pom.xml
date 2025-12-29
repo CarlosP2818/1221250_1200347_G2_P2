@@ -212,7 +212,6 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<mainClass>pt.psoft.g1.psoftg1.LMSAuthors</mainClass>
-					<layout>ZIP</layout>
 				</configuration>
 
 			</plugin>

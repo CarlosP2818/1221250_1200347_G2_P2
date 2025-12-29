@@ -2,11 +2,14 @@ package pt.psoft.g1.psoftg1.authormanagement.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.StaleObjectStateException;
 import pt.psoft.g1.psoftg1.authormanagement.services.UpdateAuthorRequest;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.shared.model.EntityWithPhoto;
 import pt.psoft.g1.psoftg1.shared.model.Name;
+
+import java.util.UUID;
 
 @Entity
 public class Author extends EntityWithPhoto {
@@ -24,6 +27,16 @@ public class Author extends EntityWithPhoto {
 
     @Embedded
     private Bio bio;
+
+    @Setter
+    @Column(unique = true)
+    @Getter
+    private UUID sagaId;
+
+    // ID da saga TEMP
+    @Enumerated(EnumType.STRING)
+    @Getter
+    private AuthorStatus status = AuthorStatus.ACTIVE;
 
     public void setName(String name) {
         this.name = new Name(name);
