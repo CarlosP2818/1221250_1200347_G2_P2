@@ -21,6 +21,7 @@
 package pt.psoft.g1.psoftg1.usermanagement.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.core.Correlation;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.AccessDeniedException;
@@ -40,9 +41,11 @@ import pt.psoft.g1.psoftg1.usermanagement.model.Reader;
 import pt.psoft.g1.psoftg1.usermanagement.model.Role;
 import pt.psoft.g1.psoftg1.usermanagement.model.User;
 import pt.psoft.g1.psoftg1.usermanagement.repositories.UserRepository;
+import pt.psoft.g1.psoftg1.usermanagement.services.rabbitmq.UserEventsPublisher;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Based on https://github.com/Yoh0xFF/java-spring-security-example
@@ -101,10 +104,6 @@ public class UserService implements UserDetailsService {
 
 		user = userRepo.save(user);
 
-		if (user.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals(Role.READER))) {
-			userEventsPublisher.publishReaderUserCreated(user);
-		}
-
 		return user;
 	}
 
@@ -145,7 +144,13 @@ public class UserService implements UserDetailsService {
 	}
 
 	@Cacheable(value = "usersByUsername", key = "#username")
-	public Optional<User> findByUsername(final String username) { return userRepo.findByUsername(username); }
+	public Optional<User> findByUsername(final String username) {
+		User user = userRepo.findByUsername(username)
+			.orElseThrow();
+
+		user.getAuthorities().size(); // força inicialização
+		return Optional.of(user);
+	}
 
 	public List<User> searchUsers(Page page, SearchUsersQuery query) {
 		if (page == null) {

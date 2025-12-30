@@ -1,39 +1,90 @@
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\App.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderAverageView.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderCountView.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\jpa\ReaderNumberEmbedded.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderLendingsAvgPerMonthView.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\mongo\ReaderDetailsMongo.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\repositories\impl\mongo\ReaderDetailsRepositoryMongoImpl.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderBookCountDTO.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\mongo\PhoneNumberMongo.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderAverageDto.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderServiceImpl.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\repositories\impl\jpa\ReaderDetailsJpaMapper.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\UpdateReaderRequest.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\TestBody.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\mongo\ReaderNumberMongo.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderCreatedEvent.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderView.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\SearchReadersQuery.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\CreateReaderRequest.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\jpa\PhoneNumberEmbedded.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\repositories\impl\MongoReaderRepository.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\model\ReaderNumber.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderViewMapper.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\jpa\BirthDateEmbedded.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\repositories\impl\jpa\ReaderDetailsRepositoryJpaImpl.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderLendingsAvgPerMonthDto.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\repositories\ReaderRepository.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\model\EmailAddress.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\repositories\impl\mongo\ReaderDetailsMongoMapper.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderQuoteView.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\model\BirthDate.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\jpa\ReaderDetailsJpa.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\repositories\impl\jpa\SpringDataReaderDetailsRepository.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderMapper.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\api\ReaderController.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\services\ReaderService.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\model\PhoneNumber.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\infraestructure\persistence\mongo\BirthDateMongo.java
-C:\Users\migue\OneDrive\Ambiente de Trabalho\1221250_1200347_G2_P2\lms-reader\src\main\java\org\example\readermanagement\model\ReaderDetails.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\GlobalExceptionHandler.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\persistence\jpa\EntityWithPhotoEmbeddable.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\TestBody.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\persistence\mongo\NameEmbeddableMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\configuration\RabbitConfig.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\Publisher.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\mongo\ReaderDetailsRepositoryMongoImpl.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\IdGenerators\Base65IdGenerator.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\repositories\ForbiddenNameMongoRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderQuoteView.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\configuration\ApiConfig.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\LendingForbiddenException.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\jpa\ReaderDetailsRepositoryJpaImpl.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\PhoneNumber.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\repositories\ForbiddenNameRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderAverageView.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\SearchReadersQuery.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\UpdateReaderRequest.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\ConcurrencyService.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\FileStorageService.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\ReaderDetails.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\PhoneNumberEmbedded.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\api\MapperInterface.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\mongo\ReaderDetailsMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\EmailAddress.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\UserCreationFailedEvent.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\service\ApiNinjasService.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\UserCreatedEvent.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\IdGenerators\HexIdGenerator.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\UserFoundReply.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\api\UploadFileResponse.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\ReaderNumber.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\persistence\jpa\NameEmbeddable.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\Dto\UserDto.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\repositories\impl\SpringDataPhotoRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\ConflictException.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\jpa\SpringDataReaderDetailsRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderView.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\mongo\ReaderDetailsMongoMapper.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\BirthDate.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\configuration\JpaConfig.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\mongo\PhoneNumberMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\IdGenerators\IdGenerator.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderServiceImpl.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\ForbiddenName.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\repositories\PhotoRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\GetUserByUsernameEvent.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\ForbiddenNameServiceImpl.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderCreatedEvent.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\repositories\impl\SpringDataForbiddenNameRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderAverageDto.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\UserEvents.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\api\ListResponse.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\App.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\BirthDateEmbedded.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\jpa\ReaderDetailsJpaMapper.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\Page.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\persistence\mongo\EntityWithPhotoEmbeddableMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\CreateUserEvent.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\SearchRequest.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\FileStorageException.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\Dto\RoleDto.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderLendingsAvgPerMonthView.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\CreateReaderRequest.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\FileUtils.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderViewMapper.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\StringUtilsCustom.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\ReaderNumberEmbedded.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\FileStorageProperties.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\service\HistoricalEventsResponse.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\ReaderDetailsJpa.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\repositories\ReaderRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\ForbiddenNameService.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\UserReplyListener.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderLendingsAvgPerMonthDto.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderCountView.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\MongoReaderRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderBookCountDTO.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderService.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\NotFoundException.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\Photo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderMapper.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\mongo\BirthDateMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\configuration\ApiNinjasConfig.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\mongo\ReaderNumberMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderController.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\EntityWithPhoto.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\bootstrapping\UserBootstrapper.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\Name.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\repositories\PhotoMongoRepository.java

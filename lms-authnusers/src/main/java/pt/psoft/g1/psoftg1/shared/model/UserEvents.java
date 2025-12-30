@@ -7,4 +7,5 @@ public class UserEvents {
     public static final String READER_CREATED = "READER_CREATED";
     public static final String READER_UPDATED = "READER_UPDATED";
     public static final String READER_DELETED = "READER_DELETED";
+    public static final String GET_USER_BY_USERNAME = "GET_USER_BY_USERNAME";
 }

@@ -31,7 +31,10 @@ public class UserJpaMapper {
             user.setName(jpa.getName().getName());
 
         if (jpa.getAuthorities() != null && !jpa.getAuthorities().isEmpty())
-            jpa.getAuthorities().forEach(user::addAuthority);
+            jpa.getAuthorities().stream()
+                    .filter(Role.class::isInstance) // garante que é Role
+                    .map(Role.class::cast)          // faz o cast
+                    .forEach(user::addAuthority);;
 
         return user;
     }

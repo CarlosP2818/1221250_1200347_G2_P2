@@ -27,41 +27,34 @@ public interface SpringDataReaderDetailsRepository extends JpaRepository<ReaderD
     List<ReaderDetailsJpa> findByPhoneNumber(@Param("phoneNumber") @NotNull String phoneNumber);
 
     @Query("SELECT r " +
-            "FROM ReaderDetailsJpa r " +
-            "JOIN UserJpa u ON r.reader.id = u.id " +
-            "WHERE u.username = :username")
+            "FROM ReaderDetailsJpa r ")
     Optional<ReaderDetailsJpa> findByUsername(@Param("username") @NotNull String username);
 
     @Query("SELECT r " +
             "FROM ReaderDetailsJpa r " +
-            "JOIN UserJpa u ON r.reader.id = u.id " +
-            "WHERE u.id = :userId")
+            "WHERE r.reader = :userId")
     Optional<ReaderDetailsJpa> findByUserId(@Param("userId") @NotNull String userId);
 
 
     @Query("SELECT COUNT (rd) " +
-            "FROM ReaderDetailsJpa rd " +
-            "JOIN UserJpa u ON rd.reader.id = u.id " +
-            "WHERE YEAR(u.createdAt) = YEAR(CURRENT_DATE)")
+            "FROM ReaderDetailsJpa rd ")
     int getCountFromCurrentYear();
 
     @Query("SELECT rd " +
             "FROM ReaderDetailsJpa rd " +
-            "JOIN LendingJpa l ON l.readerDetails.pk = rd.pk " +
-            "GROUP BY rd " +
-            "ORDER BY COUNT(l) DESC")
+            "GROUP BY rd ")
     Page<ReaderDetails> findTopReaders(Pageable pageable);
 
-    @Query("SELECT NEW pt.psoft.g1.psoftg1.readermanagement.services.ReaderBookCountDTO(rd, count(l)) " +
-            "FROM ReaderDetailsJpa rd " +
-            "JOIN LendingJpa l ON l.readerDetails.pk = rd.pk " +
-            "JOIN BookJpa b ON b.pk = l.book.pk " +
-            "JOIN GenreJpa g ON g.pk = b.genre.pk " +
-            "WHERE g.genre = :genre " +
-            "AND l.startDate >= :startDate " +
-            "AND l.startDate <= :endDate " +
-            "GROUP BY rd.pk " +
-            "ORDER BY COUNT(l.pk) DESC")
-    Page<ReaderBookCountDTO> findTopByGenre(Pageable pageable, String genre, LocalDate startDate, LocalDate endDate);
+//    @Query("SELECT NEW pt.psoft.g1.psoftg1.readermanagement.services.ReaderBookCountDTO(rd, count(l)) " +
+//            "FROM ReaderDetailsJpa rd " +
+//            "JOIN LendingJpa l ON l.readerDetails.pk = rd.pk " +
+//            "JOIN BookJpa b ON b.pk = l.book.pk " +
+//            "JOIN GenreJpa g ON g.pk = b.genre.pk " +
+//            "WHERE g.genre = :genre " +
+//            "AND l.startDate >= :startDate " +
+//            "AND l.startDate <= :endDate " +
+//            "GROUP BY rd.pk " +
+//            "ORDER BY COUNT(l.pk) DESC")
+//    Page<ReaderBookCountDTO> findTopByGenre(Pageable pageable, String genre, LocalDate startDate, LocalDate endDate);
 }
 

@@ -6,9 +6,7 @@ import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.persistence.mongo.GenreMongo;
 import pt.psoft.g1.psoftg1.shared.model.Photo;
-import pt.psoft.g1.psoftg1.usermanagement.infrastructure.persistence.mongo.ReaderMongo;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -23,7 +21,7 @@ public class ReaderDetailsMongo {
     @Id
     private String id;
 
-    private ReaderMongo reader;
+    private String reader;
 
     private ReaderNumberMongo readerNumber;
 
@@ -44,11 +42,11 @@ public class ReaderDetailsMongo {
     @Version
     private Long version;
 
-    private List<GenreMongo> interestList;
+    private List<String> interestList;
 
     private Photo photo;
 
-    public ReaderDetailsMongo(String id, int readerNumber, ReaderMongo reader, String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<GenreMongo> interestList) {
+    public ReaderDetailsMongo(String id, int readerNumber, String reader, String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<String> interestList) {
         if(reader == null || phoneNumber == null) {
             throw new IllegalArgumentException("Provided argument resolves to null object");
         }
@@ -69,7 +67,7 @@ public class ReaderDetailsMongo {
         setMarketingConsent(marketing);
         setThirdPartySharingConsent(thirdParty);
         if(interestList == null) {
-            setInterestList(new ArrayList<GenreMongo>());
+            setInterestList(new ArrayList<String>());
         }else {
             setInterestList(interestList);
         }

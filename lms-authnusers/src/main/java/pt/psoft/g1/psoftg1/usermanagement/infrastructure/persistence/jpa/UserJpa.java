@@ -23,6 +23,7 @@ package pt.psoft.g1.psoftg1.usermanagement.infrastructure.persistence.jpa;
 
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,6 +37,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import pt.psoft.g1.psoftg1.shared.infrastructure.persistence.jpa.NameEmbeddable;
 
@@ -113,9 +115,13 @@ public class UserJpa implements UserDetails {
     @Embedded
     private NameEmbeddable name;
 
-    @ElementCollection
-    @Getter
-    private final Set<Role> authorities = new HashSet<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "authority")
+    private Set<String> authorities = new HashSet<>();
 
     protected UserJpa() {
         // for ORM only
@@ -151,7 +157,7 @@ public class UserJpa implements UserDetails {
     }
 
     public void addAuthority(final Role r) {
-        authorities.add(r);
+        authorities.add(r.getAuthority());
     }
 
     @Override
@@ -172,5 +178,13 @@ public class UserJpa implements UserDetails {
     public void setName(String name){
         this.name = new NameEmbeddable(name);
     }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities.stream()
+                .map(Role::new)
+                .toList();
+    }
+
 }
 

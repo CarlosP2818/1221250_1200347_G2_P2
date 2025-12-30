@@ -1,0 +1,48 @@
+
+services:
+    users:
+        image: lms-readers:latest
+        container_name: readers-service
+        build:
+            context: .
+        ports:
+            - "8090:8090"
+        depends_on:    # adopting database per-service, this might not be a common service
+            postgres_readers:
+                condition: service_healthy
+        environment:
+            SPRING_PROFILES_ACTIVE: sql,bootstrap,base65,instance1
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_users:5432/users_1
+            SPRING_DATASOURCE_USERNAME: postgres
+            SPRING_DATASOURCE_PASSWORD: password
+            SPRING_RABBITMQ_HOST: rabbitmq
+            SPRING_RABBITMQ_PORT: 5672
+        networks:
+            - lms_network
+
+    postgres_readers:   # if the database is not a common service, this would be necessary
+        container_name: postgres_readers
+        image: postgres:latest
+        restart: always
+        ports:
+            - "5433:5432"
+        environment:
+            POSTGRES_DB: readers_1
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: password
+        volumes:
+            - postgres_readers_volume:/var/lib/postgresql
+        networks:
+            - lms_network
+        healthcheck:
+            test: [ "CMD", "pg_isready", "-U", "postgres" ]
+            interval: 10s
+            retries: 5
+            timeout: 5s
+
+networks:
+    lms_network:
+        external: true
+
+volumes:
+    postgres_readers_volume:

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import pt.psoft.g1.psoftg1.usermanagement.model.Librarian;
 import pt.psoft.g1.psoftg1.usermanagement.model.Reader;
+import pt.psoft.g1.psoftg1.usermanagement.model.Role;
 import pt.psoft.g1.psoftg1.usermanagement.model.User;
 import pt.psoft.g1.psoftg1.usermanagement.repositories.UserRepository;
 
@@ -45,6 +46,7 @@ public class UserBootstrapper implements CommandLineRunner {
         // Maria
         if (userRepository.findByUsername("maria@gmail.com").isEmpty()) {
             final User maria = Librarian.newLibrarian("maria@gmail.com", "Mariaroberta!123", "Maria Roberta");
+            maria.addAuthority(new Role(Role.ADMIN));
             userRepository.save(maria);
         }
     }

@@ -4,7 +4,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.services.ReaderBookCountDTO;
 import pt.psoft.g1.psoftg1.shared.api.MapperInterface;
@@ -16,8 +15,8 @@ import java.util.List;
 public abstract class ReaderViewMapper extends MapperInterface {
 
     @Named(value = "toReaderView")
-    @Mapping(target = "fullName", source = "reader.name.name")
-    @Mapping(target = "email", source = "reader.username")
+    @Mapping(target = "fullName", source = "phoneNumber")
+    @Mapping(target = "email", source = "phoneNumber")
     @Mapping(target = "birthDate", source = "birthDate.birthDate")
     @Mapping(target = "phoneNumber", source = "phoneNumber")
     @Mapping(target = "gdprConsent", source = "gdprConsent")
@@ -27,8 +26,8 @@ public abstract class ReaderViewMapper extends MapperInterface {
     public abstract ReaderView toReaderView(ReaderDetails readerDetails);
 
     @Named(value = "toReaderQuoteView")
-    @Mapping(target = "fullName", source = "reader.name.name")
-    @Mapping(target = "email", source = "reader.username")
+    @Mapping(target = "fullName", source = "phoneNumber")
+    @Mapping(target = "email", source = "phoneNumber")
     @Mapping(target = "birthDate", source = "birthDate.birthDate")
     @Mapping(target = "phoneNumber", source = "phoneNumber")
     @Mapping(target = "gdprConsent", source = "gdprConsent")
@@ -54,15 +53,15 @@ public abstract class ReaderViewMapper extends MapperInterface {
         return ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/readers/{year}/{seq}/photo").buildAndExpand(year,seq).toUri().toString();
     }
 
-    protected List<String> mapInterestList(List<Genre> interestList) {
+    protected List<String> mapInterestList(List<String> interestList) {
         List<String> stringInterestList = new ArrayList<>();
 
         if(interestList == null || interestList.isEmpty()) {
             return stringInterestList;
         }
 
-        for(Genre genre : interestList) {
-            stringInterestList.add(genre.getGenre());
+        for(String genre : interestList) {
+            stringInterestList.add(genre);
         }
 
         return stringInterestList;

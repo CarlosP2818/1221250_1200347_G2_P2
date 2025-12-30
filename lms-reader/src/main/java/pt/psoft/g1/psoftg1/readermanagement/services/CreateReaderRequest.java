@@ -3,6 +3,7 @@ package pt.psoft.g1.psoftg1.readermanagement.services;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,6 +11,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class CreateReaderRequest {
     @NotBlank
     @Email
@@ -51,6 +53,11 @@ public class CreateReaderRequest {
     @Getter
     @Setter
     private List<String> interestList;
+
+    @Nullable
+    @Getter
+    @Setter
+    private String reader;
 
     public boolean getThirdParty() {
         return thirdParty;

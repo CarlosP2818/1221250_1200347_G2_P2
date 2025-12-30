@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import pt.psoft.g1.psoftg1.shared.services.IdGenerators.IdGenerator;
 import pt.psoft.g1.psoftg1.usermanagement.infrastructure.persistence.jpa.ReaderJpa;
 import pt.psoft.g1.psoftg1.usermanagement.model.Reader;
+import pt.psoft.g1.psoftg1.usermanagement.model.Role;
 
 @Component
 @Profile("sql")
@@ -25,7 +26,10 @@ public class ReaderJpaMapper {
         if (jpa == null) return null;
         Reader reader = new Reader(jpa.getUsername(), jpa.getPassword());
         reader.setName(jpa.getName().getName());
-        jpa.getAuthorities().forEach(reader::addAuthority);
+        jpa.getAuthorities().stream()
+                .filter(Role.class::isInstance) // garante que é Role
+                .map(Role.class::cast)          // faz o cast
+                .forEach(reader::addAuthority);
         return reader;
     }
 

@@ -1,10 +1,9 @@
 package pt.psoft.g1.psoftg1.readermanagement.infraestructure.persistence.jpa;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.persistence.jpa.GenreJpa;
 import pt.psoft.g1.psoftg1.shared.infrastructure.persistence.jpa.EntityWithPhotoEmbeddable;
-import pt.psoft.g1.psoftg1.usermanagement.infrastructure.persistence.jpa.ReaderJpa;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,13 +11,13 @@ import java.util.List;
 @Entity
 @Table(name = "READER_DETAILS")
 public class ReaderDetailsJpa extends EntityWithPhotoEmbeddable {
+
     @Id
     private String pk;
 
     @Getter
     @Setter
-    @OneToOne
-    private ReaderJpa reader;
+    private String reader;
 
     @Getter
     private ReaderNumberEmbedded readerNumber;
@@ -52,10 +51,15 @@ public class ReaderDetailsJpa extends EntityWithPhotoEmbeddable {
 
     @Getter
     @Setter
-    @ManyToMany
-    private List<GenreJpa> interestList;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "reader_interest_list",
+            joinColumns = @JoinColumn(name = "reader_pk")
+    )
+    @Column(name = "interest")
+    private List<String> interestList;
 
-    public ReaderDetailsJpa(String pk,int readerNumber, ReaderJpa reader, String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<GenreJpa> interestList) {
+    public ReaderDetailsJpa(String pk,int readerNumber, String reader, String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<String> interestList) {
         if(reader == null || phoneNumber == null) {
             throw new IllegalArgumentException("Provided argument resolves to null object");
         }
@@ -76,7 +80,7 @@ public class ReaderDetailsJpa extends EntityWithPhotoEmbeddable {
         setMarketingConsent(marketing);
         setThirdPartySharingConsent(thirdParty);
         if(interestList == null) {
-            setInterestList(new ArrayList<GenreJpa>());
+            setInterestList(new ArrayList<String>());
         }else {
             setInterestList(interestList);
         }

@@ -111,7 +111,8 @@ public class SecurityConfig {
                 .requestMatchers("/").permitAll().requestMatchers(format("%s/**", restApiDocPath)).permitAll()
                 .requestMatchers(format("%s/**", swaggerPath)).permitAll()
                 // Our public endpoints
-                .requestMatchers("/**").permitAll() // public assets & end-points
+                .requestMatchers("api/public/**").permitAll()// public assets & end-points
+                .requestMatchers("api/admin/**").hasRole(Role.ADMIN) // only admin can access admin endpoints
                 .requestMatchers(HttpMethod.POST, "/api/readers").permitAll() // unregistered should be able to register
                 // Our private endpoints
 

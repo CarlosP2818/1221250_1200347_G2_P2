@@ -36,11 +36,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
-import pt.psoft.g1.psoftg1.usermanagement.model.Role;
-import pt.psoft.g1.psoftg1.usermanagement.repositories.UserRepository;
+import pt.psoft.g1.psoftg1.readermanagement.model.Dto.UserDto;
+import pt.psoft.g1.psoftg1.readermanagement.services.rabbitmq.Publisher;
+import pt.psoft.g1.psoftg1.readermanagement.services.rabbitmq.UserReplyListener;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static java.lang.String.format;
 
@@ -59,7 +62,6 @@ import static java.lang.String.format;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final UserRepository userRepo;
 
     @Value("${jwt.public.key}")
     private RSAPublicKey rsaPublicKey;
@@ -72,22 +74,6 @@ public class SecurityConfig {
 
     @Value("${springdoc.swagger-ui.path}")
     private String swaggerPath;
-
-    @Bean
-    public AuthenticationManager authenticationManager(final UserDetailsService userDetailsService,
-            final PasswordEncoder passwordEncoder) {
-        final DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService);
-        authenticationProvider.setPasswordEncoder(passwordEncoder);
-
-        return new ProviderManager(authenticationProvider);
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepo.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(format("User: %s, not found", username)));
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -108,12 +94,12 @@ public class SecurityConfig {
                 .requestMatchers("/").permitAll().requestMatchers(format("%s/**", restApiDocPath)).permitAll()
                 .requestMatchers(format("%s/**", swaggerPath)).permitAll()
                 // Our public endpoints
-                .requestMatchers("/api/public/**").permitAll() // public assets & end-points
-                .requestMatchers(HttpMethod.POST, "/api/readers").permitAll() // unregistered should be able to register
+                .requestMatchers("api/public/**").permitAll()// public assets & end-points// only admin can access admin endpoints
+                .requestMatchers("/api/readers").permitAll() // unregistered should be able to register
                 // Our private endpoints
 
                 // Admin has access to all endpoints
-                .requestMatchers("/**").hasRole(Role.ADMIN).anyRequest().authenticated()
+                //.requestMatchers("/**").hasRole(Role.ADMIN).anyRequest().authenticated()
                 // Set up oauth2 resource server
                 .and().httpBasic(Customizer.withDefaults()).oauth2ResourceServer().jwt();
 

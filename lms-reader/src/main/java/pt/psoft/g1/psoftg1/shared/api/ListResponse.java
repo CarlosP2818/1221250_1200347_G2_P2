@@ -31,5 +31,5 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class ListResponse<T> {
-    private List<T> items;
+	private List<T> items;
 }

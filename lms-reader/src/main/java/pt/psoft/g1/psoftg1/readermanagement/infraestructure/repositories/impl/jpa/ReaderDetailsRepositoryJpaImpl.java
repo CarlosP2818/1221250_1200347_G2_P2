@@ -2,6 +2,10 @@ package pt.psoft.g1.psoftg1.readermanagement.infraestructure.repositories.impl.j
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
@@ -12,7 +16,6 @@ import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
 import pt.psoft.g1.psoftg1.readermanagement.services.ReaderBookCountDTO;
 import pt.psoft.g1.psoftg1.readermanagement.services.SearchReadersQuery;
-import pt.psoft.g1.psoftg1.usermanagement.model.User;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -70,7 +73,7 @@ public class ReaderDetailsRepositoryJpaImpl implements ReaderRepository {
 
     @Override
     public Page<ReaderBookCountDTO> findTopByGenre(Pageable pageable, String genre, LocalDate startDate, LocalDate endDate) {
-        return repo.findTopByGenre(pageable, genre, startDate, endDate);
+        return null;
     }
 
     @Override
@@ -84,30 +87,8 @@ public class ReaderDetailsRepositoryJpaImpl implements ReaderRepository {
         final CriteriaBuilder cb = em.getCriteriaBuilder();
         final CriteriaQuery<ReaderDetails> cq = cb.createQuery(ReaderDetails.class);
         final Root<ReaderDetails> readerDetailsRoot = cq.from(ReaderDetails.class);
-        Join<ReaderDetails, User> userJoin = readerDetailsRoot.join("reader");
 
         cq.select(readerDetailsRoot);
-
-        final List<Predicate> where = new ArrayList<>();
-        if (StringUtils.hasText(query.getName())) { //'contains' type search
-            where.add(cb.like(userJoin.get("name").get("name"), "%" + query.getName() + "%"));
-            cq.orderBy(cb.asc(userJoin.get("name")));
-        }
-        if (StringUtils.hasText(query.getEmail())) { //'exatct' type search
-            where.add(cb.equal(userJoin.get("username"), query.getEmail()));
-            cq.orderBy(cb.asc(userJoin.get("username")));
-
-        }
-        if (StringUtils.hasText(query.getPhoneNumber())) { //'exatct' type search
-            where.add(cb.equal(readerDetailsRoot.get("phoneNumber").get("phoneNumber"), query.getPhoneNumber()));
-            cq.orderBy(cb.asc(readerDetailsRoot.get("phoneNumber").get("phoneNumber")));
-        }
-
-        // search using OR
-        if (!where.isEmpty()) {
-            cq.where(cb.or(where.toArray(new Predicate[0])));
-        }
-
 
         final TypedQuery<ReaderDetails> q = em.createQuery(cq);
         q.setFirstResult((page.getNumber() - 1) * page.getLimit());

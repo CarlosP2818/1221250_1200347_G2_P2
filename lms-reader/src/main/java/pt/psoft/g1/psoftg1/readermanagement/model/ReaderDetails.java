@@ -3,10 +3,8 @@ package pt.psoft.g1.psoftg1.readermanagement.model;
 import lombok.Getter;
 import lombok.Setter;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
-import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.readermanagement.services.UpdateReaderRequest;
 import pt.psoft.g1.psoftg1.shared.model.EntityWithPhoto;
-import pt.psoft.g1.psoftg1.usermanagement.model.Reader;
 
 import java.io.Serializable;
 import java.nio.file.InvalidPathException;
@@ -18,7 +16,7 @@ public class ReaderDetails extends EntityWithPhoto implements Serializable {
 
     @Getter
     @Setter
-    private Reader reader;
+    private String reader;
 
     private ReaderNumber readerNumber;
 
@@ -44,9 +42,9 @@ public class ReaderDetails extends EntityWithPhoto implements Serializable {
 
     @Getter
     @Setter
-    private List<Genre> interestList;
+    private List<String> interestList;
 
-    public ReaderDetails(int readerNumber, Reader reader, BirthDate birthDate, PhoneNumber phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<Genre> interestList) {
+    public ReaderDetails(int readerNumber, String reader, BirthDate birthDate, PhoneNumber phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<String> interestList) {
         if(reader == null || phoneNumber == null) {
             throw new IllegalArgumentException("Provided argument resolves to null object");
         }
@@ -86,7 +84,7 @@ public class ReaderDetails extends EntityWithPhoto implements Serializable {
         }
     }
 
-    public void applyPatch(final long currentVersion, final UpdateReaderRequest request, String photoURI, List<Genre> interestList) {
+    public void applyPatch(final long currentVersion, final UpdateReaderRequest request, String photoURI, List<String> interestList) {
         if(currentVersion != this.version) {
             throw new ConflictException("Provided version does not match latest version of this object");
         }
@@ -98,18 +96,6 @@ public class ReaderDetails extends EntityWithPhoto implements Serializable {
         String fullName = request.getFullName();
         String username = request.getUsername();
         String password = request.getPassword();
-
-        if(username != null) {
-            this.reader.setUsername(username);
-        }
-
-        if(password != null) {
-            this.reader.setPassword(password);
-        }
-
-        if(fullName != null) {
-            this.reader.setName(fullName);
-        }
 
         if(birthDate != null) {
             setBirthDate(new BirthDate(birthDate));

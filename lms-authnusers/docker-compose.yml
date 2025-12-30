@@ -2,35 +2,39 @@
 services:
     users:
         image: lms-authnusers:latest
-        container_name: users_in_lms_network
+        container_name: user-service
         build:
             context: .
         ports:
             - "8080:8080"
-        depends_on:    # adopting database per-service, this might not be a common service
-            postgres_in_lms_network:
+        depends_on:
+            postgres_users:
                 condition: service_healthy
         environment:
-            SPRING_PROFILES_ACTIVE: sql,bootstrap,base65,instance1
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_users:5432/users_1
+            SPRING_DATASOURCE_USERNAME: postgres
+            SPRING_DATASOURCE_PASSWORD: password
+            SPRING_RABBITMQ_HOST: rabbitmq
+            SPRING_RABBITMQ_PORT: 5672
         networks:
             - lms_network
 
-    postgres_in_lms_network:   # if the database is not a common service, this would be necessary
-        container_name: postgres_in_lms_network
-        image: postgres:latest
-        restart: always
+    postgres_users:
+        container_name: postgres_users
+        image: postgres:18
+        restart: unless-stopped
         ports:
             - "5432:5432"
         environment:
-            POSTGRES_DB: users_1
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
+            POSTGRES_DB: users_1
         volumes:
-            - "postgres_volume:/var/lib/postgresql/data"
+            - postgres_users_volume:/var/lib/postgresql  # montar diretamente em /var/lib/postgresql
         networks:
             - lms_network
         healthcheck:
-            test: [ "CMD", "pg_isready", "-U", "postgres" ]
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
             interval: 10s
             retries: 5
             timeout: 5s
@@ -40,4 +44,4 @@ networks:
         external: true
 
 volumes:
-    postgres_volume:
+    postgres_users_volume:

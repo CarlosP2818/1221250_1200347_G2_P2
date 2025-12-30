@@ -26,6 +26,7 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 
 import java.io.Serial;
+import java.io.Serializable;
 
 /**
  * Based on https://github.com/Yoh0xFF/java-spring-security-example

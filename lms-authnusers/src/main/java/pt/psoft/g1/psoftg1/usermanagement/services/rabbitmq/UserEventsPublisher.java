@@ -1,0 +1,54 @@
+package pt.psoft.g1.psoftg1.usermanagement.services.rabbitmq;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import pt.psoft.g1.psoftg1.shared.model.UserEvents;
+import pt.psoft.g1.psoftg1.usermanagement.infrastructure.repositories.impl.jpa.UserJpaMapper;
+import pt.psoft.g1.psoftg1.usermanagement.model.User;
+import pt.psoft.g1.psoftg1.usermanagement.model.dto.CreateReaderRequestDto;
+import pt.psoft.g1.psoftg1.usermanagement.model.dto.RoleDto;
+import pt.psoft.g1.psoftg1.usermanagement.model.dto.UserDto;
+import pt.psoft.g1.psoftg1.usermanagement.services.rabbitmq.events.ReaderCreatedEvent;
+import pt.psoft.g1.psoftg1.usermanagement.services.rabbitmq.events.UserFoundReply;
+
+import java.util.stream.Collectors;
+
+@Service
+public class UserEventsPublisher {
+
+    private final RabbitTemplate rabbitTemplate;
+    private final DirectExchange exchange;
+    private final UserJpaMapper userMapper;
+
+    public UserEventsPublisher(RabbitTemplate rabbitTemplate,
+                               @Qualifier("userExchange") DirectExchange userExchange, UserJpaMapper userMapper) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.exchange = userExchange;
+        this.userMapper = userMapper;
+    }
+
+    public void publishReaderUserCreated(User user, String correlationId, CreateReaderRequestDto createReaderRequestDto) {
+        // Cria UserDto
+        UserDto userDto = new UserDto(
+                userMapper.toJpa(user).getId(),
+                user.isEnabled(),
+                user.getUsername(),
+                user.getPassword(),
+                user.getName(),
+                user.getAuthorities().stream().map(a -> new RoleDto(a.getAuthority())).collect(Collectors.toSet())
+        );
+
+        UserFoundReply reply = new UserFoundReply(correlationId, userDto, createReaderRequestDto);
+
+        // Envia para a fila do reader
+        rabbitTemplate.convertAndSend(
+                exchange.getName(),
+                UserEvents.TEMP_USER_CREATED,
+                reply
+        );
+    }
+}
+

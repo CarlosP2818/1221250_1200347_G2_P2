@@ -1,0 +1,14 @@
+# Use the official OpenJDK 21 slim image (Debian-based, Ubuntu-compatible)
+FROM eclipse-temurin:21-jdk-jammy
+
+# Set a working directory inside the container
+WORKDIR /app
+
+# Copy the JAR file into the container
+COPY target/lms-reader-1.0-SNAPSHOT.jar /app/app.jar
+
+# Informative only; it has no influence in the port effectively exposed by the container.
+#EXPOSE 8080
+
+# Set the command to run the JAR file
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

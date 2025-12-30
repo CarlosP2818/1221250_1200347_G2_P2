@@ -1,6 +1,10 @@
 package pt.psoft.g1.psoftg1.readermanagement.api;
 
 import jakarta.annotation.Nullable;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

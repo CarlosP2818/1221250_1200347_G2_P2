@@ -21,33 +21,22 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
-import pt.psoft.g1.psoftg1.external.service.ApiNinjasService;
-import pt.psoft.g1.psoftg1.lendingmanagement.api.LendingView;
-import pt.psoft.g1.psoftg1.lendingmanagement.api.LendingViewMapper;
-import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
-import pt.psoft.g1.psoftg1.lendingmanagement.services.LendingService;
+import pt.psoft.g1.psoftg1.readermanagement.model.Dto.RoleDto;
+import pt.psoft.g1.psoftg1.readermanagement.model.Dto.UserDto;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
-import pt.psoft.g1.psoftg1.readermanagement.services.CreateReaderRequest;
-import pt.psoft.g1.psoftg1.readermanagement.services.ReaderService;
-import pt.psoft.g1.psoftg1.readermanagement.services.SearchReadersQuery;
-import pt.psoft.g1.psoftg1.readermanagement.services.UpdateReaderRequest;
+import pt.psoft.g1.psoftg1.readermanagement.services.*;
+import pt.psoft.g1.psoftg1.readermanagement.services.rabbitmq.Publisher;
+import pt.psoft.g1.psoftg1.readermanagement.services.rabbitmq.UserReplyListener;
+import pt.psoft.g1.psoftg1.service.ApiNinjasService;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
 import pt.psoft.g1.psoftg1.shared.services.ConcurrencyService;
 import pt.psoft.g1.psoftg1.shared.services.FileStorageService;
 import pt.psoft.g1.psoftg1.shared.services.SearchRequest;
-import pt.psoft.g1.psoftg1.usermanagement.infrastructure.repositories.impl.jpa.UserJpaMapper;
-import pt.psoft.g1.psoftg1.usermanagement.model.Librarian;
-import pt.psoft.g1.psoftg1.usermanagement.model.Role;
-import pt.psoft.g1.psoftg1.usermanagement.model.User;
-import pt.psoft.g1.psoftg1.usermanagement.services.UserService;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Tag(name = "Readers", description = "Endpoints to manage readers")
 @RestController
@@ -55,14 +44,13 @@ import java.util.Optional;
 @RequestMapping("/api/readers")
 class ReaderController {
     private final ReaderService readerService;
-    private final UserService userService;
     private final ReaderViewMapper readerViewMapper;
-    private final LendingService lendingService;
-    private final LendingViewMapper lendingViewMapper;
     private final ConcurrencyService concurrencyService;
     private final FileStorageService fileStorageService;
+    private final Publisher publisher;
     private final ApiNinjasService apiNinjasService;
-    private final UserJpaMapper userJpaMapper;
+    private final UserReplyListener userReplyListener;
+    private final Publisher userQueryPublisher;
 
     @Operation(summary = "Gets the reader data if authenticated as Reader or all readers if authenticated as Librarian")
     @ApiResponse(description = "Success", responseCode = "200", content = { @Content(mediaType = "application/json",
@@ -70,9 +58,17 @@ class ReaderController {
             array = @ArraySchema(schema = @Schema(implementation = ReaderView.class))) })
     @GetMapping
     public ResponseEntity<?> getData(Authentication authentication) {
-        User loggedUser = userService.getAuthenticatedUser(authentication);
+        String username = authentication.getName();
+        String correlationId = UUID.randomUUID().toString();
 
-        if (loggedUser.getAuthorities().contains(Role.READER)) {
+        CompletableFuture<UserDto> future =
+                userReplyListener.register(correlationId);
+
+        userQueryPublisher.requestUserByUsername(username, correlationId);
+
+        UserDto loggedUser = future.join();
+
+        if (loggedUser.getAuthorities().stream().anyMatch(role -> role.authority().equals(RoleDto.READER))) {
             ReaderDetails readerDetails = readerService.findByUsername(loggedUser.getUsername())
                     .orElseThrow(() -> new NotFoundException(ReaderDetails.class, loggedUser.getUsername()));
             return ResponseEntity.ok().eTag(Long.toString(readerDetails.getVersion())).body(readerViewMapper.toReaderView(readerDetails));
@@ -123,25 +119,25 @@ class ReaderController {
         return new ListResponse<>(readerViewMapper.toReaderView(readerDetailsList));
     }
 
-    @RolesAllowed(Role.LIBRARIAN)
-    @GetMapping(params = "name")
-    public ListResponse<ReaderView> findByReaderName(@RequestParam("name") final String name) {
-        List<User> userList = this.userService.findByNameLike(name);
-        List<ReaderDetails> readerDetailsList = new ArrayList<>();
+//    @RolesAllowed(RoleDto.LIBRARIAN)
+//    @GetMapping(params = "name")
+//    public ListResponse<ReaderView> findByReaderName(@RequestParam("name") final String name) {
+//        List<UserDto> userList = this.userService.findByNameLike(name);
+//        List<ReaderDetails> readerDetailsList = new ArrayList<>();
 
-        for(User user : userList) {
-            Optional<ReaderDetails> readerDetails = this.readerService.findByUsername(user.getUsername());
-            if(readerDetails.isPresent()) {
-                readerDetailsList.add(readerDetails.get());
-            }
-        }
+//        for(UserDto user : userList) {
+//            Optional<ReaderDetails> readerDetails = this.readerService.findByUsername(user.getUsername());
+//            if(readerDetails.isPresent()) {
+//                readerDetailsList.add(readerDetails.get());
+//            }
+//        }
 
-        if(readerDetailsList.isEmpty()) {
-            throw new NotFoundException("Could not find reader with name: " + name);
-        }
-
-        return new ListResponse<>(readerViewMapper.toReaderView(readerDetailsList));
-    }
+//        if(readerDetailsList.isEmpty()) {
+//            throw new NotFoundException("Could not find reader with name: " + name);
+//        }
+//
+//        return new ListResponse<>(readerViewMapper.toReaderView(readerDetailsList));
+//    }
 
     @Operation(summary= "Gets a reader photo")
     @GetMapping("/{year}/{seq}/photo")
@@ -153,10 +149,18 @@ class ReaderController {
                                                      @Parameter(description = "The sequencial of the Reader to find")
                                                      final Integer seq,
                                                          Authentication authentication) {
-        User loggedUser = userService.getAuthenticatedUser(authentication);
+        String username = authentication.getName();
+        String correlationId = UUID.randomUUID().toString();
+
+        CompletableFuture<UserDto> future =
+                userReplyListener.register(correlationId);
+
+        userQueryPublisher.requestUserByUsername(username, correlationId);
+
+        UserDto loggedUser = future.join();
 
         //if Librarian is logged in, skip ahead
-        if (!(loggedUser instanceof Librarian)) {
+        if (!(loggedUser.getAuthorities().stream().anyMatch(role -> role.authority().equals(RoleDto.LIBRARIAN)))) {
             final var loggedReaderDetails = readerService.findByUsername(loggedUser.getUsername())
                     .orElseThrow(() -> new NotFoundException(ReaderDetails.class, loggedUser.getUsername()));
 
@@ -190,7 +194,15 @@ class ReaderController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<byte[]> getReaderOwnPhoto(Authentication authentication) {
 
-        User loggedUser = userService.getAuthenticatedUser(authentication);
+        String username = authentication.getName();
+        String correlationId = UUID.randomUUID().toString();
+
+        CompletableFuture<UserDto> future =
+                userReplyListener.register(correlationId);
+
+        userQueryPublisher.requestUserByUsername(username, correlationId);
+
+        UserDto loggedUser = future.join();
 
         Optional<ReaderDetails> optReaderDetails = readerService.findByUsername(loggedUser.getUsername());
         if(optReaderDetails.isEmpty()) {
@@ -218,26 +230,28 @@ class ReaderController {
     @Operation(summary = "Creates a reader")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<ReaderView> createReader(@Valid CreateReaderRequest readerRequest) throws ValidationException {
-        MultipartFile file = readerRequest.getPhoto();
+    public ResponseEntity<ReaderView> createReader(@Valid @RequestBody CreateReaderRequest request) throws ValidationException {
+        String correlationId = UUID.randomUUID().toString();
 
-        String fileName = fileStorageService.getRequestPhoto(file);
+        // Publica evento para criar usuário
+        publisher.sendCreateUserEvent(request, correlationId);
 
-        ReaderDetails readerDetails = readerService.create(readerRequest, fileName);
 
-        final var newReaderUri = ServletUriComponentsBuilder.fromCurrentRequestUri()
-                .pathSegment(readerDetails.getReaderNumber())
-                .build().toUri();
-
-        return ResponseEntity.created(newReaderUri)
-                .eTag(Long.toString(readerDetails.getVersion()))
-                .body(readerViewMapper.toReaderView(readerDetails));
+        return ResponseEntity.accepted().build();
     }
 
     @Operation(summary = "Deletes a reader photo")
     @DeleteMapping("/photo")
     public ResponseEntity<Void> deleteReaderPhoto(Authentication authentication) {
-        User loggedUser = userService.getAuthenticatedUser(authentication);
+        String username = authentication.getName();
+        String correlationId = UUID.randomUUID().toString();
+
+        CompletableFuture<UserDto> future =
+                userReplyListener.register(correlationId);
+
+        userQueryPublisher.requestUserByUsername(username, correlationId);
+
+        UserDto loggedUser = future.join();
 
         Optional<ReaderDetails> optReaderDetails = readerService.findByUsername(loggedUser.getUsername());
         if(optReaderDetails.isEmpty()) {
@@ -257,7 +271,7 @@ class ReaderController {
     }
 
     @Operation(summary = "Updates a reader")
-    @RolesAllowed(Role.READER)
+    @RolesAllowed(RoleDto.READER)
     @PatchMapping
     public ResponseEntity<ReaderView> updateReader(
             @Valid UpdateReaderRequest readerRequest,
@@ -274,55 +288,21 @@ class ReaderController {
 
         String fileName = this.fileStorageService.getRequestPhoto(file);
 
-        User loggedUser = userService.getAuthenticatedUser(authentication);
+        String username = authentication.getName();
+        String correlationId = UUID.randomUUID().toString();
+
+        CompletableFuture<UserDto> future =
+                userReplyListener.register(correlationId);
+
+        userQueryPublisher.requestUserByUsername(username, correlationId);
+
+        UserDto loggedUser = future.join();
         ReaderDetails readerDetails = readerService
-                .update(userJpaMapper.toJpa(loggedUser).getId(), readerRequest, concurrencyService.getVersionFromIfMatchHeader(ifMatchValue), fileName);
+                .update(loggedUser.getId(), readerRequest, concurrencyService.getVersionFromIfMatchHeader(ifMatchValue), fileName);
 
         return ResponseEntity.ok()
                 .eTag(Long.toString(readerDetails.getVersion()))
                 .body(readerViewMapper.toReaderView(readerDetails));
-    }
-
-    @Operation(summary = "Gets the lendings of this reader by ISBN")
-    @GetMapping(value = "/{year}/{seq}/lendings")
-    public List<LendingView> getReaderLendings(
-            Authentication authentication,
-            @PathVariable("year")
-                @Parameter(description = "The year of the Reader to find")
-                final Integer year,
-            @PathVariable("seq")
-                @Parameter(description = "The sequencial of the Reader to find")
-                final Integer seq,
-            @RequestParam("isbn")
-                @Parameter(description = "The ISBN of the Book to find")
-                final String isbn,
-            @RequestParam(value = "returned", required = false)
-                @Parameter(description = "Filter by returned")
-                final Optional<Boolean> returned)
-    {
-        String urlReaderNumber = year + "/" + seq;
-
-        final var urlReaderDetails = readerService.findByReaderNumber(urlReaderNumber)
-                .orElseThrow(() -> new NotFoundException(Lending.class, urlReaderNumber));
-
-        User loggedUser = userService.getAuthenticatedUser(authentication);
-
-        //if Librarian is logged in, skip ahead
-        if (!(loggedUser instanceof Librarian)) {
-            final var loggedReaderDetails = readerService.findByUsername(loggedUser.getUsername())
-                    .orElseThrow(() -> new NotFoundException(ReaderDetails.class, loggedUser.getUsername()));
-
-            //if logged Reader matches the one associated with the lendings, skip ahead
-            if(!Objects.equals(loggedReaderDetails.getReaderNumber(), urlReaderDetails.getReaderNumber())){
-                throw new AccessDeniedException("Reader does not have permission to view these lendings");
-            }
-        }
-        final var lendings = lendingService.listByReaderNumberAndIsbn(urlReaderNumber, isbn, returned);
-
-        if(lendings.isEmpty())
-            throw new NotFoundException("No lendings found with provided ISBN");
-
-        return lendingViewMapper.toLendingView(lendings);
     }
 
     @GetMapping("/top5")

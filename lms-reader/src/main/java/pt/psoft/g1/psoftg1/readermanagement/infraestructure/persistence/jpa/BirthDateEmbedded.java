@@ -1,5 +1,6 @@
 package pt.psoft.g1.psoftg1.readermanagement.infraestructure.persistence.jpa;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.context.annotation.PropertySource;

@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Entity
 @NoArgsConstructor
-public class ForbiddenName {
+public class ForbiddenName{
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
