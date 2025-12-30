@@ -24,7 +24,7 @@
         <module name="LMSAuthors" />
         <module name="lms-reader" />
       </profile>
-      <profile name="Annotation profile for LMSBooks" enabled="true">
+      <profile name="Annotation profile for LMSGenre" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />

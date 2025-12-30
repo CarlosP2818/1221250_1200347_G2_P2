@@ -14,7 +14,7 @@ public class Genre {
     private final int GENRE_MAX_LENGTH = 100;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    long pk;
+    String pk;
 
     @Size(min = 1, max = GENRE_MAX_LENGTH, message = "Genre name must be between 1 and 100 characters")
     @Column(unique = true, nullable = false, length = GENRE_MAX_LENGTH)
@@ -34,8 +34,14 @@ public class Genre {
     protected Genre() {
     }
 
-    public Genre(String genre) {
-        setGenre(genre);
+    public Genre(String id, String genre) {
+        if (genre == null) throw new IllegalArgumentException("Genre cannot be null");
+        if (genre.isBlank()) throw new IllegalArgumentException("Genre cannot be blank");
+        if (genre.length() > GENRE_MAX_LENGTH)
+            throw new IllegalArgumentException("Genre name too long");
+
+        this.pk = id;
+        this.genre = genre;
     }
 
     private void setGenre(String genre) {
