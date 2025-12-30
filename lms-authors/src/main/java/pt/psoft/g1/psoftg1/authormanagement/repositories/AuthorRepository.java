@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface AuthorRepository {
 
-    Optional<Author> findByAuthorNumber(Long authorNumber);
+    Optional<Author> findByAuthorNumber(String authorNumber);
 
     List<Author> searchByNameNameStartsWith(String name);
 
@@ -21,7 +21,5 @@ public interface AuthorRepository {
     Iterable<Author> findAll();
 
     void delete(Author author);
-
-    List<Author> findCoAuthorsByAuthorNumber(Long authorNumber);
 
 }
