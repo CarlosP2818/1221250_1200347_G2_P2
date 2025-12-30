@@ -18,9 +18,9 @@ public class GenreMongoMapper {
         this.idGenerator = injectedIdGenerator;
     }
 
-    public Genre toDomain(GenreMongo jpa) {
-        if (jpa == null) return null;
-        return new Genre(jpa.getPk(), jpa.getGenre());
+    public Genre toDomain(GenreMongo mongo) {
+        if (mongo == null) return null;
+        return new Genre(mongo.getGenre());
     }
 
     public GenreMongo toMongo(Genre genre) {

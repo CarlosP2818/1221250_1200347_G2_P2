@@ -34,14 +34,8 @@ public class Genre {
     protected Genre() {
     }
 
-    public Genre(String id, String genre) {
-        if (genre == null) throw new IllegalArgumentException("Genre cannot be null");
-        if (genre.isBlank()) throw new IllegalArgumentException("Genre cannot be blank");
-        if (genre.length() > GENRE_MAX_LENGTH)
-            throw new IllegalArgumentException("Genre name too long");
-
-        this.pk = id;
-        this.genre = genre;
+    public Genre(String genre) {
+        setGenre(genre);
     }
 
     private void setGenre(String genre) {

@@ -23,7 +23,7 @@ public class GenreJpaMapper {
 
     public Genre toDomain(GenreJpa jpa) {
         if (jpa == null) return null;
-        return new Genre(jpa.getPk(), jpa.getGenre());
+        return new Genre(jpa.getGenre());
     }
 
     public GenreJpa toJpa(Genre genre) {
