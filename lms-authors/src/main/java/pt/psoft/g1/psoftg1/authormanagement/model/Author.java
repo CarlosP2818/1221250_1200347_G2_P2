@@ -17,7 +17,8 @@ public class Author extends EntityWithPhoto {
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "AUTHOR_NUMBER")
     @Getter
-    private long authorNumber;
+    @Setter
+    private String authorNumber;
 
     @Version
     private long version;
@@ -50,7 +51,7 @@ public class Author extends EntityWithPhoto {
         return version;
     }
 
-    public Long getId() {
+    public String getId() {
         return authorNumber;
     }
 

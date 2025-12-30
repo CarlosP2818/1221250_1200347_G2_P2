@@ -11,11 +11,10 @@ import org.springframework.amqp.core.Message;
 import java.nio.charset.StandardCharsets;
 
 @Service
-@RequiredArgsConstructor
 public class BookRabbitmqController {
 
     @Autowired
-    private final BookService bookService;
+    private BookService bookService;
 
     @RabbitListener(queues = "#{autoDeleteQueue_Book_Created.name}")
     public void receiveBookCreatedMsg(Message msg) {

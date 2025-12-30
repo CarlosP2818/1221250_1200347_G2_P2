@@ -3,8 +3,6 @@ package pt.psoft.g1.psoftg1.bookmanagement.services;
 import jakarta.annotation.Nullable;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
-import pt.psoft.g1.psoftg1.authormanagement.model.Author;
-import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 
 import java.util.List;
 
@@ -29,20 +27,15 @@ public class UpdateBookRequest {
     @Setter
     private MultipartFile photo;
 
-    @Setter
-    private Genre genreObj;
+    private Long genreId;
 
-    private String genre;
+    private List<Long> authorsIds;
 
-    private List<Long> authors;
-
-    private List<Author> authorObjList;
-
-    public UpdateBookRequest(String isbn, String title, String genre, @NonNull List<Long> authors, String description) {
+    public UpdateBookRequest(String isbn, String title, Long genreId, List<Long> authorsIds, String description) {
         this.isbn = isbn;
-        this.genre = genre;
         this.title = title;
+        this.genreId = genreId;
+        this.authorsIds = authorsIds;
         this.description = description;
-        this.authors = authors;
     }
 }

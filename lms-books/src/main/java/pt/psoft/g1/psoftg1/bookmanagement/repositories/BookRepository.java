@@ -2,6 +2,7 @@ package pt.psoft.g1.psoftg1.bookmanagement.repositories;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.repository.query.Param;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookCountDTO;
@@ -16,21 +17,19 @@ import java.util.Optional;
  */
 public interface BookRepository {
 
-    List<Book> findByGenre(@Param("genre") String genre);
+    List<Book> findByGenreId(Long genreId);
 
-    List<Book> findByTitle(@Param("title") String title);
+    List<Book> findByTitle(String title);
 
-    List<Book> findByAuthorName(@Param("authorName") String authorName);
+    Optional<Book> findByIsbn(String isbn);
 
-    Optional<Book> findByIsbn(@Param("isbn") String isbn);
-
-//    Page<BookCountDTO> findTop5BooksLent(@Param("oneYearAgo") LocalDate oneYearAgo, Pageable pageable);
-
-    List<Book> findBooksByAuthorNumber(Long authorNumber);
+    List<Book> findByAuthorIds(List<Long> authorsIds);
 
     List<Book> searchBooks(pt.psoft.g1.psoftg1.shared.services.Page page, SearchBooksQuery query);
 
     Book save(Book book);
+
+    Iterable<Book> findAll();
 
     void delete(Book book);
 }

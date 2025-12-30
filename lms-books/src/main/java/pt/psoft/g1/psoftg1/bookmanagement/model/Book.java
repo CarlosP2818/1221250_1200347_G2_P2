@@ -3,16 +3,15 @@ package pt.psoft.g1.psoftg1.bookmanagement.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.StaleObjectStateException;
-import pt.psoft.g1.psoftg1.authormanagement.model.Author;
-import pt.psoft.g1.psoftg1.bookmanagement.services.UpdateBookRequest;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
-import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.shared.model.EntityWithPhoto;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "Book", uniqueConstraints = { @UniqueConstraint(name = "uc_book_isbn", columnNames = { "ISBN" }) })
@@ -34,55 +33,62 @@ public class Book extends EntityWithPhoto {
     Title title;
 
     @Getter
-    @ManyToOne
     @NotNull
-    Genre genre;
+    Long genreId;
 
     @Getter
-    @ManyToMany
-    private List<Author> authors = new ArrayList<>();
+    private List<Long> authorsIds = new ArrayList<>();
 
     @Embedded
     Description description;
 
-    private void setTitle(String title) {
-        this.title = new Title(title);
+    @Setter
+    @Column(unique = true)
+    @Getter
+    private UUID sagaId;
+
+    // ID da saga TEMP
+    @Enumerated(EnumType.STRING)
+    @Getter
+    private BookStatus status = BookStatus.STARTED;
+
+
+    public void setTitle(Title title) {
+        this.title = title;
     }
 
-    private void setIsbn(String isbn) {
-        this.isbn = new Isbn(isbn);
+    public void setIsbn(Isbn isbn) {
+        this.isbn = isbn;
     }
 
-    private void setDescription(String description) {
-        this.description = new Description(description);
+    public void setDescription(Description description) {
+        this.description = description;
     }
 
-    private void setGenre(Genre genre) {
-        this.genre = genre;
+    public void setGenreId(Long genre) {
+        this.genreId = genre;
     }
 
-    private void setAuthors(List<Author> authors) {
-        this.authors = authors;
+    public void setAuthorsIds(List<Long> authors) {
+        this.authorsIds = authors;
     }
 
     public String getDescription() {
         return this.description.toString();
     }
 
-    public Book(String isbn, String title, String description, Genre genre, List<Author> authors, String photoURI) {
-        setTitle(title);
-        setIsbn(isbn);
-        if (description != null)
-            setDescription(description);
-        if (genre == null)
-            throw new IllegalArgumentException("Genre cannot be null");
-        setGenre(genre);
-        if (authors == null)
-            throw new IllegalArgumentException("Author list is null");
-        if (authors.isEmpty())
-            throw new IllegalArgumentException("Author list is empty");
+    public Book(Isbn isbn, Title title, Description description, Long genreId, List<Long> authorsIds, String photoURI) {
+        if (isbn == null) throw new IllegalArgumentException("ISBN cannot be null");
+        if (title == null) throw new IllegalArgumentException("Title cannot be null");
+        if (genreId == null) throw new IllegalArgumentException("Genre cannot be null");
+        if (authorsIds == null) throw new IllegalArgumentException("Authors list cannot be null");
+        if (authorsIds.isEmpty()) throw new IllegalArgumentException("Authors list cannot be empty");
 
-        setAuthors(authors);
+        setIsbn(isbn);
+        setTitle(title);
+        setDescription(description);
+        setGenreId(genreId);
+        setAuthorsIds(authorsIds);
         setPhotoInternal(photoURI);
     }
 
@@ -102,26 +108,26 @@ public class Book extends EntityWithPhoto {
                            final String title,
                            final String description,
                            final String photoURI,
-                           final Genre genre,
-                           final List<Author> authors ) {
+                           final Long genre,
+                           final List<Long> authors ) {
 
         if (!Objects.equals(this.version, desiredVersion))
             throw new StaleObjectStateException("Object was already modified by another user", this.pk);
 
         if (title != null) {
-            setTitle(title);
+            setTitle(new Title(title));
         }
 
         if (description != null) {
-            setDescription(description);
+            setDescription(new Description(description));
         }
 
         if (genre != null) {
-            setGenre(genre);
+            setGenreId(genre);
         }
 
         if (authors != null) {
-            setAuthors(authors);
+            setAuthorsIds(authors);
         }
 
         if (photoURI != null)

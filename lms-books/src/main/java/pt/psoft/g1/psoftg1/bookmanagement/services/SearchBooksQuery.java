@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SearchBooksQuery {
     private String title;
-    private String genre;
-    private String authorName;
+    private String genreId;
+    private String authorIds;
 }

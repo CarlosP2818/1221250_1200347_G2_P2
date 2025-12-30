@@ -22,7 +22,7 @@ public class CreateBookRequest {
     private String title;
 
     @NotBlank
-    private String genre;
+    private Long genreId;
 
     @Nullable
     @Getter
@@ -35,5 +35,5 @@ public class CreateBookRequest {
     private String photoURI;
 
     @NotNull
-    private List<Long> authors;
+    private List<Long> authorsIds;
 }

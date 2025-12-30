@@ -17,10 +17,10 @@ public class BookView {
     private String title;
 
     @NotNull
-    private List<String> authors;
+    private List<Long> authorsIds;
 
     @NotNull
-    private String genre;
+    private Long genreId;
 
     private String description;
 
