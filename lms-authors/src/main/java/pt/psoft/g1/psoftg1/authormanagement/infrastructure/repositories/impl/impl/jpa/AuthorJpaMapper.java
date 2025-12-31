@@ -4,9 +4,7 @@ import org.springframework.stereotype.Component;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.persistence.jpa.AuthorJpa;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.persistence.jpa.BioEmbeddable;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
-import pt.psoft.g1.psoftg1.authormanagement.model.Bio;
-import pt.psoft.g1.psoftg1.shared.infrastructure.repositories.impl.persistence.jpa.NameEmbeddable;
-import pt.psoft.g1.psoftg1.shared.model.Name;
+import pt.psoft.g1.psoftg1.shared.infrastructure.persistence.jpa.NameEmbeddable;
 
 import java.util.Optional;
 

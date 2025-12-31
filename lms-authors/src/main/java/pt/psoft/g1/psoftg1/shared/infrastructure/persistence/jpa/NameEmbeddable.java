@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.shared.infrastructure.repositories.impl.persistence.jpa;
+package pt.psoft.g1.psoftg1.shared.infrastructure.persistence.jpa;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

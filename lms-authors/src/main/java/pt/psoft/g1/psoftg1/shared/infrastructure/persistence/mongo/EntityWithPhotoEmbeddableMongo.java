@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.shared.infrastructure.repositories.impl.persistence.mongo;
+package pt.psoft.g1.psoftg1.shared.infrastructure.persistence.mongo;
 
 import com.mongodb.lang.Nullable;
 import lombok.Getter;

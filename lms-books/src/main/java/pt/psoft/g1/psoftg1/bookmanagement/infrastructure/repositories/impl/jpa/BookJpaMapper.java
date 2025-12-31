@@ -7,7 +7,7 @@ import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Description;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Isbn;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Title;
-import pt.psoft.g1.psoftg1.bookmanagement.services.IdGenerators.IdGenerator;
+import pt.psoft.g1.psoftg1.shared.services.IdGenerators.IdGenerator;
 
 import java.util.Optional;
 

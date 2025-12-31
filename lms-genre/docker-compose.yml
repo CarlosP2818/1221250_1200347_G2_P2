@@ -9,7 +9,7 @@ services:
         ports:
             - "8087:8080"
         environment:
-            SPRING_PROFILES_ACTIVE: instance1,bootstrap
+            SPRING_PROFILES_ACTIVE: instance1,bootstrap,mongo,base65
         networks:
             - lms_network
         volumes:
@@ -24,7 +24,7 @@ services:
         ports:
             - "8088:8080"
         environment:
-            SPRING_PROFILES_ACTIVE: instance2,bootstrap
+            SPRING_PROFILES_ACTIVE: instance2,bootstrap,mongo,base65
         networks:
             - lms_network
         volumes:
@@ -37,3 +37,5 @@ networks:
 volumes:
     uploaded_files_volume_1:
     uploaded_files_volume_2:
+    mongo_data_volume:
+    postgres_volume:

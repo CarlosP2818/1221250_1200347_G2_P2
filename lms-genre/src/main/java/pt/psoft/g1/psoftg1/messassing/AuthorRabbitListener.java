@@ -15,13 +15,13 @@ import pt.psoft.g1.psoftg1.genremanagement.services.GenreService;
 @RequiredArgsConstructor
 public class AuthorRabbitListener {
 
-    private final GenreService genreService;
+  //  private final GenreService genreService;
 
-    @RabbitListener(queues = "author-temp-created-queue")
+   /* @RabbitListener(queues = "author-temp-created-queue", autoStartup = "false")
     public void handleTempAuthorCreation(GenreTempCreatedEvent payload) throws Exception {
         genreService.createTempGenre(
                 payload.getGenreName(),
                 payload.getSagaId()
         );
-    }
+    }*/
 }

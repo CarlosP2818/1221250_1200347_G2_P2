@@ -3,7 +3,7 @@ package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.pe
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import pt.psoft.g1.psoftg1.shared.infrastructure.repositories.impl.persistence.jpa.NameEmbeddable;
+import pt.psoft.g1.psoftg1.shared.infrastructure.persistence.jpa.NameEmbeddable;
 import pt.psoft.g1.psoftg1.shared.model.Photo;
 
 import java.io.Serializable;

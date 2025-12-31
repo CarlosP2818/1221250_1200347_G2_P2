@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.bookmanagement.services.IdGenerators;
+package pt.psoft.g1.psoftg1.shared.services.IdGenerators;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;

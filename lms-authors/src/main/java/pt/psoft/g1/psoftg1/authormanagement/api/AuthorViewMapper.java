@@ -52,7 +52,7 @@ public abstract class AuthorViewMapper extends MapperInterface {
     }
 
     protected String generatePhotoUrl(Author author) {
-        Long authorNumber = author.getAuthorNumber();
+        Long authorNumber = Long.valueOf(author.getAuthorNumber());
         return ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/authors/{authorNumber}/photo")
                 .buildAndExpand(authorNumber).toUri().toString();
     }
