@@ -5,6 +5,5 @@ import pt.psoft.g1.psoftg1.usermanagement.model.dto.UserDto;
 
 public record UserFoundReply(
         String correlationId,
-        UserDto user,
-        CreateReaderRequestDto createReaderRequestDto
+        UserDto user
 ) {}

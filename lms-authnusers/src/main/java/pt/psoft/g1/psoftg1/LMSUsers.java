@@ -6,7 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @EnableRabbit
-public class LMSUsers {
+public class
+LMSUsers {
 
     public static void main(String[] args) {
         SpringApplication.run(LMSUsers.class, args);

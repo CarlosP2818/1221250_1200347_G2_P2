@@ -20,6 +20,8 @@
  */
 package pt.psoft.g1.psoftg1.usermanagement.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.Correlation;
 import org.springframework.cache.annotation.CacheEvict;
@@ -36,13 +38,17 @@ import org.springframework.transaction.annotation.Transactional;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.shared.repositories.ForbiddenNameRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
+import pt.psoft.g1.psoftg1.usermanagement.infrastructure.persistence.jpa.OutboxEventJpa;
+import pt.psoft.g1.psoftg1.usermanagement.infrastructure.repositories.impl.jpa.UserJpaMapper;
 import pt.psoft.g1.psoftg1.usermanagement.model.Librarian;
 import pt.psoft.g1.psoftg1.usermanagement.model.Reader;
 import pt.psoft.g1.psoftg1.usermanagement.model.Role;
 import pt.psoft.g1.psoftg1.usermanagement.model.User;
+import pt.psoft.g1.psoftg1.usermanagement.repositories.OutboxEventRepository;
 import pt.psoft.g1.psoftg1.usermanagement.repositories.UserRepository;
 import pt.psoft.g1.psoftg1.usermanagement.services.rabbitmq.UserEventsPublisher;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,12 +63,14 @@ public class UserService implements UserDetailsService {
 
 	private final UserRepository userRepo;
 	private final EditUserMapper userEditMapper;
+	private final OutboxEventRepository outboxRepository;
 
 	private final ForbiddenNameRepository forbiddenNameRepository;
 
 	private final PasswordEncoder passwordEncoder;
 
 	private final UserEventsPublisher userEventsPublisher;
+	private final UserJpaMapper userJpaMapper;
 
 	public List<User> findByName(String name){
 		return this.userRepo.findByNameName(name);
@@ -103,6 +111,17 @@ public class UserService implements UserDetailsService {
 		//user.addAuthority(new Role(request.getRole()));
 
 		user = userRepo.save(user);
+
+		OutboxEventJpa event = new OutboxEventJpa();
+		event.setAggregateType("User");
+		event.setAggregateId(userJpaMapper.toJpa(user).getId());
+		event.setType("USER_CREATED");
+		event.setPayload(convertToJson(user));
+		event.setCreatedAt(LocalDateTime.now());
+		event.setProcessed(false);
+
+		outboxRepository.save(event);
+
 
 		return user;
 	}
@@ -177,4 +196,14 @@ public class UserService implements UserDetailsService {
 
 		return loggedUser.get();
 	}
+
+	public String convertToJson(Object object) {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			return mapper.writeValueAsString(object);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to convert object to JSON", e);
+		}
+	}
+
 }

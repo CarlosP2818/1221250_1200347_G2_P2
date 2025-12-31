@@ -18,56 +18,71 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class UserReplyListener {
 
-    private final Map<String, CompletableFuture<UserDto>> pendingRequests = new ConcurrentHashMap<>();
+    private final Map<String, CreateReaderRequestDto> pendingCreateReader =
+            new ConcurrentHashMap<>();
+
     private final ReaderService readerService;
 
-    public CompletableFuture<UserDto> register(String correlationId) {
-        CompletableFuture<UserDto> future = new CompletableFuture<>();
-        pendingRequests.put(correlationId, future);
-        return future;
+    public void registerCreateReader(
+            String correlationId,
+            CreateReaderRequest request) {
+
+        CreateReaderRequestDto dto = new CreateReaderRequestDto(
+                request.getUsername(),
+                request.getPassword(),
+                request.getFullName(),
+                request.getBirthDate(),
+                request.getPhoneNumber(),
+                request.getPhoto(),
+                request.getGdpr(),
+                request.getMarketing(),
+                request.getThirdParty(),
+                request.getInterestList(),
+                request.getReader()
+        );
+
+        pendingCreateReader.put(correlationId, dto);
     }
 
     @RabbitListener(queues = "user.reply.queue")
     public void handle(UserFoundReply reply) {
-        CompletableFuture<UserDto> future =
-                pendingRequests.remove(reply.correlationId());
 
-        if (future != null) {
-            future.complete(reply.user());
-        }
-    }
+        CreateReaderRequestDto dto = pendingCreateReader.remove(reply.correlationId());
 
-    @RabbitListener(queues = "temp.user.created.queue")
-    public void handleUserCreated(UserFoundReply reply) {
-        if (reply == null || reply.user() == null || reply.user().getUsername() == null || reply.createReaderRequest()== null) {
-            System.err.println("Mensagem inválida recebida, descartando: " + reply);
-            return; // Descarta a mensagem para não reprocessar
+        if (dto == null) {
+            System.err.println(
+                    "Sem contexto para correlationId: " + reply.correlationId()
+            );
+            return;
         }
+
         UserDto user = reply.user();
-        CreateReaderRequest request = getCreateReaderRequest(reply, user);
 
-        // Chama o serviço de criação de reader
+        CreateReaderRequest request = buildCreateReaderRequest(dto, user);
+
         readerService.create(request, null);
 
-        // Se quiser, pode logar ou enviar algum reply
-        System.out.println("Reader criado a partir do user: " + user.getUsername() + " | correlationId: " + reply.correlationId());
+        System.out.println(
+                "Reader criado para user " + user.getUsername()
+                        + " | correlationId: " + reply.correlationId()
+        );
     }
 
-    private static @NotNull CreateReaderRequest getCreateReaderRequest(UserFoundReply reply, UserDto user) {
-        CreateReaderRequestDto createReaderRequest = reply.createReaderRequest();
+    private CreateReaderRequest buildCreateReaderRequest(
+            CreateReaderRequestDto dto,
+            UserDto user) {
 
-        // Monta a request para criar o reader
         CreateReaderRequest request = new CreateReaderRequest();
         request.setUsername(user.getUsername());
         request.setFullName(user.getName().getName());
-        request.setPassword(user.getPassword()); // opcional, se você quiser manter a mesma
-        request.setGdpr(true); // default
+        request.setPassword(user.getPassword());
+        request.setGdpr(true);
         request.setMarketing(false);
         request.setThirdParty(false);
         request.setReader(user.getId());
-        request.setBirthDate(createReaderRequest.getBirthDate());
-        request.setPhoneNumber(createReaderRequest.getPhoneNumber());
-        request.setInterestList(createReaderRequest.getInterestList());
+        request.setBirthDate(dto.getBirthDate());
+        request.setPhoneNumber(dto.getPhoneNumber());
+        request.setInterestList(dto.getInterestList());
         return request;
     }
 }

@@ -6,6 +6,5 @@ import pt.psoft.g1.psoftg1.readermanagement.services.CreateReaderRequest;
 
 public record UserFoundReply(
         String correlationId,
-        UserDto user,
-        CreateReaderRequestDto createReaderRequest
+        UserDto user
 ) {}

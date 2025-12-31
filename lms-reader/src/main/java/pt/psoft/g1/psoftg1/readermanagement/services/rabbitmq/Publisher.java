@@ -22,13 +22,15 @@ public class Publisher {
         this.userExchange = userExchange;
     }
 
-    public void sendCreateUserEvent(CreateReaderRequest createReaderRequest, String correlationId) {
+    public void sendCreateUserEvent(
+            CreateReaderRequest createReaderRequest,
+            String correlationId) {
+
         CreateUserEvent event = new CreateUserEvent();
         event.setUsername(createReaderRequest.getUsername());
         event.setPassword(createReaderRequest.getPassword());
         event.setFullName(createReaderRequest.getFullName());
         event.setCorrelationId(correlationId);
-        event.setCreateReaderRequest(createReaderRequest);
 
         rabbitTemplate.convertAndSend(
                 userExchange.getName(),

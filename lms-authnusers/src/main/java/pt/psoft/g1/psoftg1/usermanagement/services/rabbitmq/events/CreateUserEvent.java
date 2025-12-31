@@ -14,6 +14,5 @@ public class CreateUserEvent {
     private String password;
     private String fullName;
     private String correlationId;
-    private CreateReaderRequestDto createReaderRequest;
 }
 

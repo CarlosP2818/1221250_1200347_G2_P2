@@ -24,13 +24,13 @@ public class UserEventsPublisher {
     private final UserJpaMapper userMapper;
 
     public UserEventsPublisher(RabbitTemplate rabbitTemplate,
-                               @Qualifier("userExchange") DirectExchange userExchange, UserJpaMapper userMapper) {
+                               @Qualifier("repliesExchange") DirectExchange userExchange, UserJpaMapper userMapper) {
         this.rabbitTemplate = rabbitTemplate;
         this.exchange = userExchange;
         this.userMapper = userMapper;
     }
 
-    public void publishReaderUserCreated(User user, String correlationId, CreateReaderRequestDto createReaderRequestDto) {
+    public void publishReaderUserCreated(User user, String correlationId) {
         // Cria UserDto
         UserDto userDto = new UserDto(
                 userMapper.toJpa(user).getId(),
@@ -41,12 +41,12 @@ public class UserEventsPublisher {
                 user.getAuthorities().stream().map(a -> new RoleDto(a.getAuthority())).collect(Collectors.toSet())
         );
 
-        UserFoundReply reply = new UserFoundReply(correlationId, userDto, createReaderRequestDto);
+        UserFoundReply reply = new UserFoundReply(correlationId, userDto);
 
         // Envia para a fila do reader
         rabbitTemplate.convertAndSend(
                 exchange.getName(),
-                UserEvents.TEMP_USER_CREATED,
+                UserEvents.USER_REPLY,
                 reply
         );
     }

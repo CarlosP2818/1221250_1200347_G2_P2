@@ -48,7 +48,7 @@ public class UserListener {
         );
 
         UserFoundReply reply =
-                new UserFoundReply(cmd.correlationId(), user, null);
+                new UserFoundReply(cmd.correlationId(), user);
 
         rabbitTemplate.convertAndSend(
                 "user.replies.exchange",
@@ -85,16 +85,7 @@ public class UserListener {
                             .map(a -> new RoleDto(a.getAuthority()))
                             .collect(Collectors.toSet())
             );
-
-            UUID correlationId = UUID.randomUUID();
-            userEventsPublisher.publishReaderUserCreated(user,correlationId.toString(), event.getCreateReaderRequest());
-
-            // Envia reply
-            rabbitTemplate.convertAndSend(
-                    "user.replies.exchange",
-                    "user.created.reply",
-                    userDto
-            );
+            userEventsPublisher.publishReaderUserCreated(user, event.getCorrelationId());
 
             System.out.println("Usuário criado: " + user.getUsername());
 

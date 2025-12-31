@@ -8,4 +8,6 @@ public class UserEvents {
     public static final String READER_UPDATED = "READER_UPDATED";
     public static final String READER_DELETED = "READER_DELETED";
     public static final String GET_USER_BY_USERNAME = "GET_USER_BY_USERNAME";
+    public static final String USER_FOUND_REPLY = "USER_FOUND_REPLY";
+    public static final String USER_REPLY = "USER_REPLY";
 }

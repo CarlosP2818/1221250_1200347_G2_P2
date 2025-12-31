@@ -32,6 +32,11 @@ public class RabbitConfig {
         return new Queue("user.create.queue", true, false, false);
     }
 
+    @Bean
+    public Queue userReplyQueue() {
+        return new Queue("user.reply.queue", true, false, false);
+    }
+
     // Binding para TEMP_USER_CREATED
     @Bean
     public Binding tempUserCreatedBinding(DirectExchange userExchange, Queue tempUserCreatedQueue) {
@@ -49,6 +54,13 @@ public class RabbitConfig {
     }
 
     @Bean
+    public Binding userReplyBinding(DirectExchange repliesExchange, Queue userReplyQueue) {
+        return BindingBuilder.bind(userReplyQueue)
+                .to(repliesExchange)
+                .with(UserEvents.USER_REPLY);
+    }
+
+    @Bean
     public DirectExchange repliesExchange() {
         return new DirectExchange("user.replies.exchange");
     }
@@ -58,7 +70,7 @@ public class RabbitConfig {
     public Binding getUserReplyBinding(Queue getUserByUsernameQueue, DirectExchange repliesExchange) {
         return BindingBuilder.bind(getUserByUsernameQueue)
                 .to(repliesExchange)
-                .with("user.reply");
+                .with("user.get.reply");
     }
 
     @Bean
