@@ -1,66 +1,90 @@
 package pt.psoft.g1.psoftg1.readermanagement.infraestructure.persistence.jpa;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.shared.infrastructure.persistence.jpa.EntityWithPhotoEmbeddable;
+import pt.psoft.g1.psoftg1.shared.model.Photo;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 @Entity
 @Table(name = "READER_DETAILS_TEMP")
 public class ReaderDetailsJpaTemp extends EntityWithPhotoEmbeddable {
 
     @Id
-    @Getter
     private String correlationId;
 
-    @Getter
     @Setter
     private String reader;
 
-    @Getter
     private ReaderNumberEmbedded readerNumber;
 
     @Embedded
-    @Getter
     private BirthDateEmbedded birthDate;
 
     @Embedded
-    @Getter
     private PhoneNumberEmbedded phoneNumber;
 
     @Setter
-    @Getter
     @Basic
     private boolean gdprConsent;
 
     @Setter
     @Basic
-    @Getter
     private boolean marketingConsent;
 
     @Setter
     @Basic
-    @Getter
     private boolean thirdPartySharingConsent;
 
     @Version
-    @Getter
     private Long version;
 
-    @Getter
+    @NotBlank
+    @Email
+    @NonNull
+    private String username;
+
+    @NotBlank
+    @NonNull
+    private String password;
+
+    @NotBlank
+    private String fullName;
+
+    @Nullable
+    @Setter
+    private String photo;
+
+    @Setter
+    private boolean gdpr;
+
+    @Setter
+    private boolean marketing;
+
+    @Setter
+    private boolean thirdParty;
+
     @Setter
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
-            name = "reader_interest_list",
-            joinColumns = @JoinColumn(name = "reader_pk")
+            name = "reader_interest_list_temp",
+            joinColumns = @JoinColumn(name = "correlation_id")
     )
     @Column(name = "interest")
     private List<String> interestList;
 
-    public ReaderDetailsJpaTemp(String correlationId,int readerNumber, String reader, String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<String> interestList) {
+    public ReaderDetailsJpaTemp(String correlationId,int readerNumber, String reader, String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI, List<String> interestList, String username, String password, String fullName) {
         if(reader == null || phoneNumber == null) {
             throw new IllegalArgumentException("Provided argument resolves to null object");
         }
@@ -80,6 +104,10 @@ public class ReaderDetailsJpaTemp extends EntityWithPhotoEmbeddable {
         setPhotoInternal(photoURI);
         setMarketingConsent(marketing);
         setThirdPartySharingConsent(thirdParty);
+
+        this.username = username;
+        this.password = password;
+        this.fullName = fullName;
         if(interestList == null) {
             setInterestList(new ArrayList<String>());
         }else {
@@ -107,5 +135,11 @@ public class ReaderDetailsJpaTemp extends EntityWithPhotoEmbeddable {
 
     protected ReaderDetailsJpaTemp() {
         // for ORM only
+    }
+
+    @Nullable
+    public Photo getPhoto() {
+        assert this.photo != null;
+        return new Photo(Path.of(this.photo));
     }
 }

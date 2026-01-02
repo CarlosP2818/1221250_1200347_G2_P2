@@ -47,6 +47,11 @@ public class UserRepositoryMongoImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findById(String objectId) {
+        return Optional.empty();
+    }
+
+    @Override
     public User getById(Long id) {
         return findById(id).orElse(null);
     }

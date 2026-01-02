@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "outbox_events")
@@ -15,15 +16,27 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class OutboxEventJpa {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String aggregateType; // ex: "User"
-    private String aggregateId;   // ex: userId
-    private String type;          // ex: "USER_CREATED"
-    private String payload;       // JSON com os dados
-    private boolean processed;    // false por padrão
-    private LocalDateTime createdAt;
+    @Column(nullable = false)
+    private String aggregateType;
 
+    @Column(nullable = false)
+    private String aggregateId;
+
+    @Column(nullable = false)
+    private String type;
+
+    @Column(nullable = false)
+    private String correlationId;
+
+    @Column(nullable = false)
+    private boolean processed = false;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 }
+

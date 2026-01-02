@@ -9,7 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
+import pt.psoft.g1.psoftg1.readermanagement.infraestructure.persistence.jpa.ReaderDetailsJpaTemp;
+import pt.psoft.g1.psoftg1.readermanagement.infraestructure.repositories.impl.jpa.SpringReaderDetailsJpaTempRepository;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
+import pt.psoft.g1.psoftg1.readermanagement.model.ReaderNumber;
+import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderDetailsTempRepository;
 import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
 import pt.psoft.g1.psoftg1.shared.repositories.ForbiddenNameRepository;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
@@ -24,6 +28,7 @@ public class ReaderServiceImpl implements ReaderService {
     private final ReaderMapper readerMapper;
     private final ForbiddenNameRepository forbiddenNameRepository;
     private final PhotoRepository photoRepository;
+    private final ReaderDetailsTempRepository springReaderDetailsJpaTempRepository;
 
 
     @Override
@@ -68,7 +73,11 @@ public class ReaderServiceImpl implements ReaderService {
         int count = readerRepo.getCountFromCurrentYear();
         ReaderDetails rd = readerMapper.createReaderDetails(count+1, request.getReader(), request, photoURI, stringInterestList);
 
-        return readerRepo.save(rd);
+        readerRepo.save(rd);
+
+        springReaderDetailsJpaTempRepository.findByReaderNumber(request.getReader()).ifPresent(springReaderDetailsJpaTempRepository::delete);
+
+        return rd;
     }
 
     @Override
@@ -188,5 +197,29 @@ public class ReaderServiceImpl implements ReaderService {
             throw new NotFoundException("No results match the search query");
 
         return list;
+    }
+
+    @Override
+    public ReaderDetailsJpaTemp createTemp(CreateReaderRequest request, String photoURI, String correlationId) {
+        int count = springReaderDetailsJpaTempRepository.getCountFromCurrentYear();
+        ReaderDetailsJpaTemp rd = new ReaderDetailsJpaTemp(
+                correlationId,
+                count+1,
+                request.getReader(),
+                request.getBirthDate(),
+                request.getPhoneNumber(),
+                request.getGdpr(),
+                request.getMarketing(),
+                request.getThirdParty(),
+                photoURI,
+                request.getInterestList(),
+                request.getUsername(),
+                request.getPassword(),
+                request.getFullName()
+        );
+
+        springReaderDetailsJpaTempRepository.save(rd);
+
+        return rd;
     }
 }

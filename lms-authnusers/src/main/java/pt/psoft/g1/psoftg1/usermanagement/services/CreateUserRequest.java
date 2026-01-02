@@ -58,6 +58,10 @@ public class CreateUserRequest {
 
 	private Set<String> authorities = new HashSet<>();
 
+	@Setter
+	@Getter
+	private String correlationId;
+
 	public CreateUserRequest(final String username, final String fullName, final String password) {
 		this.username = username;
 		this.name = fullName;

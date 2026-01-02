@@ -18,7 +18,6 @@ import pt.psoft.g1.psoftg1.usermanagement.services.rabbitmq.events.UserFoundRepl
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -68,6 +67,7 @@ public class UserListener {
             );
             request.setRole("READER");
             request.setAuthorities(new HashSet<>(Arrays.asList("READER", "ADMIN")));
+            request.setCorrelationId(event.getCorrelationId());
 
             // Cria usuário
             User user = userService.create(request);
@@ -85,7 +85,7 @@ public class UserListener {
                             .map(a -> new RoleDto(a.getAuthority()))
                             .collect(Collectors.toSet())
             );
-            userEventsPublisher.publishReaderUserCreated(user, event.getCorrelationId());
+            //userEventsPublisher.publishReaderUserCreated(user, event.getCorrelationId());
 
             System.out.println("Usuário criado: " + user.getUsername());
 

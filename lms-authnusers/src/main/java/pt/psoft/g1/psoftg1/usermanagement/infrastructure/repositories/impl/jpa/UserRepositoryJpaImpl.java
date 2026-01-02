@@ -68,7 +68,7 @@ class UserRepositoryJpaImpl implements UserRepository {
 
     @Override
     public Optional<User> findById(Long objectId) {
-        return repo.findById(objectId)
+        return repo.findById(objectId.toString())
                 .map(userJpaMapper::toDomain);
     }
 
@@ -127,5 +127,10 @@ class UserRepositoryJpaImpl implements UserRepository {
         q.setMaxResults(page.getLimit());
 
         return q.getResultList();
+    }
+
+    public Optional<User> findById(String id){
+        return repo.findById(id)
+                .map(userJpaMapper::toDomain);
     }
 }

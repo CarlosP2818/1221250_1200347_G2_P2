@@ -1,5 +1,6 @@
 package pt.psoft.g1.psoftg1.readermanagement.services;
 
+import pt.psoft.g1.psoftg1.readermanagement.infraestructure.persistence.jpa.ReaderDetailsJpaTemp;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -22,4 +23,6 @@ public interface ReaderService {
     //Optional<Reader> update(UpdateReaderRequest request) throws Exception;
     Optional<ReaderDetails> removeReaderPhoto(String readerNumber, long desiredVersion);
     List<ReaderDetails> searchReaders(Page page, SearchReadersQuery query);
+
+    ReaderDetailsJpaTemp createTemp(CreateReaderRequest request, String photoURI, String correlationId);
 }

@@ -36,7 +36,7 @@ import pt.psoft.g1.psoftg1.usermanagement.model.User;
  */
 @Repository
 //@CacheConfig(cacheNames = "users")
-public interface SpringDataUserRepository extends JpaRepository<UserJpa, Long> {
+public interface SpringDataUserRepository extends JpaRepository<UserJpa, String> {
 
 	@Override
 	//@CacheEvict(allEntries = true)
@@ -52,7 +52,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserJpa, Long> {
 	 */
 	@Override
 	//@Cacheable
-	Optional<UserJpa> findById(Long objectId);
+	Optional<UserJpa> findById(String objectId);
 
 	/**
 	 * getById explicitly loads a user or throws an exception if the user does not
@@ -63,7 +63,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserJpa, Long> {
 	 */
 	//@Cacheable
 	default UserJpa getById(final Long id) {
-		final Optional<UserJpa> maybeUser = findById(id);
+		final Optional<UserJpa> maybeUser = findById(id.toString());
 		// throws 404 Not Found if the user does not exist or is not enabled
 		return maybeUser.filter(UserJpa::isEnabled).orElseThrow(() -> new NotFoundException(User.class, id));
 	}

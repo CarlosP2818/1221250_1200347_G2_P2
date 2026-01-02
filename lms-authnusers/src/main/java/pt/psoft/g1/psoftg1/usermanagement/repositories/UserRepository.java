@@ -39,6 +39,8 @@ public interface UserRepository {
 
 	Optional<User> findById(Long objectId);
 
+	Optional<User> findById(String objectId);
+
 	default User getById(final Long id) {
 		final Optional<User> maybeUser = findById(id);
 		// throws 404 Not Found if the user does not exist or is not enabled

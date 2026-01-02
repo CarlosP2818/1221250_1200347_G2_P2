@@ -116,7 +116,7 @@ public class UserService implements UserDetailsService {
 		event.setAggregateType("User");
 		event.setAggregateId(userJpaMapper.toJpa(user).getId());
 		event.setType("USER_CREATED");
-		event.setPayload(convertToJson(user));
+		event.setCorrelationId(request.getCorrelationId());
 		event.setCreatedAt(LocalDateTime.now());
 		event.setProcessed(false);
 

@@ -30,24 +30,15 @@ public class UserEventsPublisher {
         this.userMapper = userMapper;
     }
 
-    public void publishReaderUserCreated(User user, String correlationId) {
-        // Cria UserDto
-        UserDto userDto = new UserDto(
-                userMapper.toJpa(user).getId(),
-                user.isEnabled(),
-                user.getUsername(),
-                user.getPassword(),
-                user.getName(),
-                user.getAuthorities().stream().map(a -> new RoleDto(a.getAuthority())).collect(Collectors.toSet())
-        );
+    /**
+     * OUTBOX-BASED publishing
+     */
+    public void publishUserCreated(UserFoundReply payload) {
 
-        UserFoundReply reply = new UserFoundReply(correlationId, userDto);
-
-        // Envia para a fila do reader
         rabbitTemplate.convertAndSend(
                 exchange.getName(),
                 UserEvents.USER_REPLY,
-                reply
+                payload
         );
     }
 }

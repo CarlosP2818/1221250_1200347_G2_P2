@@ -201,6 +201,8 @@ class ReaderController {
         // Publica evento para criar usuário
         String correlationId = UUID.randomUUID().toString();
 
+        readerService.createTemp(request, null, correlationId);
+
         // 1. Guardar contexto local
         userReplyListener.registerCreateReader(
                 correlationId,
