@@ -1,39 +1,50 @@
-
 services:
     lmsbooks_1:
         image: lmsbooks:latest
-        container_name: books1_in_lms_network
+        container_name: books-service
         build:
-            context: ..
-            dockerfile: Dockerfile
+            context: .
         ports:
             - "8087:8080"
+        depends_on:
+            - mongo
         environment:
-            SPRING_PROFILES_ACTIVE: instance1,bootstrap
-        networks:
-            - lms_network
-        volumes:
-            - "uploaded_files_volume_1:/tmp"
+            SPRING_PROFILES_ACTIVE: mongo,bootstrap,base65,instance1
+            SPRING_DATA_MONGODB_URI: mongodb://mongoadmin:password@mongo:27017/books_1
+            SPRING_RABBITMQ_HOST: rabbitmq
+            SPRING_RABBITMQ_PORT: 5672
 
-    lmsbooks_2:
-        image: lmsbooks:latest
-        container_name: books2_in_lms_network
-        build:
-            context: ..
-            dockerfile: Dockerfile
-        ports:
-            - "8088:8080"
-        environment:
-            SPRING_PROFILES_ACTIVE: instance2,bootstrap
+            FILE_UPLOAD_DIR: uploads
+
         networks:
             - lms_network
         volumes:
-            - "uploaded_files_volume_2:/tmp"
+            - uploaded_files_volume_1:/tmp
+
+    mongo:
+        image: mongo:6
+        container_name: mongo
+        restart: unless-stopped
+        ports:
+            - "27017:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: mongoadmin
+            MONGO_INITDB_ROOT_PASSWORD: password
+            MONGO_INITDB_DATABASE: books_1
+        volumes:
+            - mongo_data:/data/db
+        networks:
+            - lms_network
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
 networks:
     lms_network:
         external: true
 
 volumes:
+    mongo_data:
     uploaded_files_volume_1:
-    uploaded_files_volume_2:

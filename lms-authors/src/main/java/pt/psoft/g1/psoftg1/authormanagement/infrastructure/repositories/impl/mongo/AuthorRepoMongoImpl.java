@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.impl.mongo;
+package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.mongo;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
-import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.persistence.mongo.AuthorMongo;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.AuthorMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
 

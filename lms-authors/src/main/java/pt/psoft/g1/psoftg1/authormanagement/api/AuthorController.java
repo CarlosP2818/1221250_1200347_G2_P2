@@ -23,9 +23,6 @@ import pt.psoft.g1.psoftg1.shared.api.ListResponse;
 import pt.psoft.g1.psoftg1.shared.services.ConcurrencyService;
 import pt.psoft.g1.psoftg1.shared.services.FileStorageService;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Tag(name = "Author", description = "Endpoints for managing Authors")
@@ -53,7 +50,7 @@ public class AuthorController {
     @Operation(summary = "Updates a specific author")
     @PatchMapping(value = "/{authorNumber}")
     public ResponseEntity<AuthorView> partialUpdate(
-            @PathVariable("authorNumber") @Parameter(description = "The author ID") Long authorNumber,
+            @PathVariable("authorNumber") @Parameter(description = "The author ID") String authorNumber,
             WebRequest request,
             @Valid UpdateAuthorRequest updateRequest
     ) {
@@ -79,7 +76,7 @@ public class AuthorController {
     @Operation(summary = "Know an author’s detail given its author number")
     @GetMapping(value = "/{authorNumber}")
     public ResponseEntity<AuthorView> findByAuthorNumber(
-            @PathVariable("authorNumber") @Parameter(description = "The number of the Author to find") final Long authorNumber) {
+            @PathVariable("authorNumber") @Parameter(description = "The number of the Author to find") final String authorNumber) {
 
         final var author = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException(Author.class, authorNumber));
@@ -101,7 +98,7 @@ public class AuthorController {
     @GetMapping("/{authorNumber}/photo")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<byte[]> getSpecificAuthorPhoto(
-            @PathVariable("authorNumber") @Parameter(description = "The number of the Author to find") final Long authorNumber) {
+            @PathVariable("authorNumber") @Parameter(description = "The number of the Author to find") final String authorNumber) {
 
         Author authorDetails = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException(Author.class, authorNumber));
@@ -127,7 +124,7 @@ public class AuthorController {
     // Delete a foto
     @Operation(summary = "Deletes a author photo")
     @DeleteMapping("/{authorNumber}/photo")
-    public ResponseEntity<Void> deleteBookPhoto(@PathVariable("authorNumber") final Long authorNumber) {
+    public ResponseEntity<Void> deleteBookPhoto(@PathVariable("authorNumber") final String authorNumber) {
 
         Author author = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new AccessDeniedException("Author not found"));

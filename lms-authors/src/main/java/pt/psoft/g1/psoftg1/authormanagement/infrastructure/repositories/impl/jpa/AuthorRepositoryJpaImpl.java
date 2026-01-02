@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.impl.jpa;
+package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.jpa;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;

@@ -1,7 +1,7 @@
-package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.impl.jpa;
+package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.jpa;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.persistence.jpa.AuthorJpa;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.jpa.AuthorJpa;
 
 import java.util.List;
 import java.util.Optional;

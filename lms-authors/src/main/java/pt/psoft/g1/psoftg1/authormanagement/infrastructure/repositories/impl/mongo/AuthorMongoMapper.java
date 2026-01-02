@@ -1,12 +1,10 @@
-package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.impl.mongo;
+package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.mongo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.persistence.mongo.AuthorMongo;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.AuthorMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
-import pt.psoft.g1.psoftg1.authormanagement.model.Bio;
-import pt.psoft.g1.psoftg1.shared.model.Name;
 import pt.psoft.g1.psoftg1.shared.services.IdGenerators.IdGenerator;
 
 @Component

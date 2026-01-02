@@ -50,7 +50,7 @@ public class AuthorServiceImplIntegrationTest {
 
     @Test
     public void whenValidId_thenAuthorShouldBeFound() {
-        Long id = 1L;
+        String id = "1L";
         Optional<Author> found = authorService.findByAuthorNumber(id);
         found.ifPresent(author -> assertThat(author.getId()).isEqualTo(id));
     }

@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.persistence.mongo;
+package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

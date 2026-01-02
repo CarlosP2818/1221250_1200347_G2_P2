@@ -11,17 +11,19 @@ public  class RabbitmqClientConfig {
 
     @Bean
     public DirectExchange direct() {
-        return new DirectExchange("LMS.books");
+        return new DirectExchange("LMS.genre");
     }
 
     private static class ReceiverConfig {
 
-        @Bean(name = "autoDeleteQueue_Book_Created")
-        public Queue autoDeleteQueue_Book_Created() {
-
-            System.out.println("autoDeleteQueue_Book_Created created!");
-            return new AnonymousQueue();
+        @Bean
+        public Queue genreTempCreatedQueue() {
+            return QueueBuilder.durable("genre-temp-created-queue").build();
         }
 
+        @Bean
+        public Binding genreTempCreatedBinding(Queue genreTempCreatedQueue, DirectExchange genreExchange) {
+            return BindingBuilder.bind(genreTempCreatedQueue).to(genreExchange).with("genre.temp.created");
+        }
     }
 }

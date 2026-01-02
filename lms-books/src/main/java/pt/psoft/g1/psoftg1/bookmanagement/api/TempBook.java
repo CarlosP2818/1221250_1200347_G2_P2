@@ -1,60 +1,39 @@
 package pt.psoft.g1.psoftg1.bookmanagement.api;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Description;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Isbn;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Title;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Entity
-@Table(name = "book_temp")
+@Document(collection = "book_temp")
 public class TempBook {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    long pk;
+    private String id; // Mongo usa String ou ObjectId
 
-    @Version
-    @Getter
-    @Setter
-    private Long version;
+    @Getter @Setter
+    private String isbn;
 
-    @Embedded
-    @Getter
-    @Setter
-    Isbn isbn;
+    @Getter @Setter @NotNull
+    private String title;
 
-    @Getter
-    @Embedded
-    @NotNull
-    @Setter
-    Title title;
-
-    @Getter
-    @NotNull
-    @Setter
+    @Getter @Setter @NotNull
     private Long genreId;
 
-    @Getter
-    @Setter
+    @Getter @Setter
     private List<Long> authorsIds = new ArrayList<>();
 
-    @Embedded
-    @Getter
-    @Setter
-    Description description;
+    @Getter @Setter
+    private String description;
 
-    @Getter
-    @Setter
+    @Getter @Setter
     private UUID sagaId;
 
-    @Getter
-    @Setter
+    @Getter @Setter
     private boolean processed = false;
 }
