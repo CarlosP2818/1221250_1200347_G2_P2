@@ -1,6 +1,6 @@
 
 services:
-    users:
+    readers:
         image: lms-readers:latest
         container_name: readers-service
         build:
@@ -12,7 +12,7 @@ services:
                 condition: service_healthy
         environment:
             SPRING_PROFILES_ACTIVE: sql,bootstrap,base65,instance1
-            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_users:5432/users_1
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_readers:5432/readers_1
             SPRING_DATASOURCE_USERNAME: postgres
             SPRING_DATASOURCE_PASSWORD: password
             SPRING_RABBITMQ_HOST: rabbitmq

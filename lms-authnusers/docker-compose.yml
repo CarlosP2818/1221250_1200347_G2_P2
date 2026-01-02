@@ -2,7 +2,7 @@
 services:
     users:
         image: lms-authnusers:latest
-        container_name: user-service
+        container_name: users-service
         build:
             context: .
         ports:

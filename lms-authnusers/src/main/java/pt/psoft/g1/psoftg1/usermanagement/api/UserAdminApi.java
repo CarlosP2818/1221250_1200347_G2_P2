@@ -24,7 +24,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
 import pt.psoft.g1.psoftg1.shared.services.SearchRequest;
 import pt.psoft.g1.psoftg1.usermanagement.model.Role;
@@ -50,32 +53,60 @@ public class UserAdminApi {
 	private final UserService userService;
 	private final UserViewMapper userViewMapper;
 
+	@Value("${feature.maintenance.killswitch}")
+	private boolean isKilled;
+
 	@PostMapping
 	public UserView create(@RequestBody @Valid final CreateUserRequest request) {
+
+		if (isKilled) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+		}
+
 		final var user = userService.create(request);
 		return userViewMapper.toUserView(user);
 	}
 
 	@PutMapping("{id}")
 	public UserView update(@PathVariable final Long id, @RequestBody @Valid final EditUserRequest request) {
+
+		if (isKilled) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+		}
+
 		final var user = userService.update(id, request);
 		return userViewMapper.toUserView(user);
 	}
 
 	@DeleteMapping("{id}")
 	public UserView delete(@PathVariable final Long id) {
+
+		if (isKilled) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+		}
+
 		final var user = userService.delete(id);
 		return userViewMapper.toUserView(user);
 	}
 
 	@GetMapping("{id}")
 	public UserView get(@PathVariable final Long id) {
+
+		if (isKilled) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+		}
+
 		final var user = userService.getUser(id);
 		return userViewMapper.toUserView(user);
 	}
 
 	@PostMapping("search")
 	public ListResponse<UserView> search(@RequestBody final SearchRequest<SearchUsersQuery> request) {
+
+		if (isKilled) {
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+		}
+
 		final List<User> searchUsers = userService.searchUsers(request.getPage(), request.getQuery());
 		return new ListResponse<>(userViewMapper.toUserView(searchUsers));
 	}

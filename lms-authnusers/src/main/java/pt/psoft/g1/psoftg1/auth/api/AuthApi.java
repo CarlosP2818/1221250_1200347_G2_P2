@@ -23,6 +23,7 @@ package pt.psoft.g1.psoftg1.auth.api;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,7 @@ import pt.psoft.g1.psoftg1.usermanagement.model.User;
 import pt.psoft.g1.psoftg1.usermanagement.services.CreateUserRequest;
 import pt.psoft.g1.psoftg1.usermanagement.services.UserService;
 
+import javax.naming.ServiceUnavailableException;
 import java.time.Instant;
 
 import static java.lang.String.format;
@@ -69,8 +71,16 @@ public class AuthApi {
 	private final UserService userService;
 	private final UserJpaMapper userJpaMapper;
 
+	@Value("${feature.maintenance.killswitch}")
+	private boolean isKilled;
+
 	@PostMapping("login")
 	public ResponseEntity<UserView> login(@RequestBody @Valid final AuthRequest request) {
+
+		if(isKilled) {
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
 		try {
 			final Authentication authentication = authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));

@@ -227,7 +227,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <mainClass>pt.psoft.g1.psoftg1.LMSAuthors</mainClass>
+          <mainClass>pt.psoft.g1.psoftg1.App</mainClass>
           <layout>ZIP</layout>
         </configuration>
 

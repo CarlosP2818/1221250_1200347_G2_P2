@@ -11,6 +11,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -56,12 +57,20 @@ class ReaderController {
     private final ApiNinjasService apiNinjasService;
     private final UserReplyListener userReplyListener;
 
+    @Value("${feature.maintenance.killswitch}")
+    private boolean isKilled;
+
     @Operation(summary = "Gets the reader data if authenticated as Reader or all readers if authenticated as Librarian")
     @ApiResponse(description = "Success", responseCode = "200", content = { @Content(mediaType = "application/json",
             // Use the `array` property instead of `schema`
             array = @ArraySchema(schema = @Schema(implementation = ReaderView.class))) })
     @GetMapping
     public ResponseEntity<?> getData(Authentication authentication) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String username = authentication.getName();
 
         // Determine role from authentication authorities
@@ -90,6 +99,11 @@ class ReaderController {
                                                               @PathVariable("seq")
                                                               @Parameter(description = "The sequencial of the Reader to find")
                                                               final Integer seq) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String readerNumber = year+"/"+seq;
         final var readerDetails = readerService.findByReaderNumber(readerNumber)
                 .orElseThrow(() -> new NotFoundException("Could not find reader from specified reader number"));
@@ -129,6 +143,11 @@ class ReaderController {
                                                          @Parameter(description = "The sequencial of the Reader to find")
                                                          final Integer seq,
                                                          Authentication authentication) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String username = authentication.getName();
 
         boolean isLibrarian = authentication.getAuthorities().stream()
@@ -169,6 +188,10 @@ class ReaderController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<byte[]> getReaderOwnPhoto(Authentication authentication) {
 
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String username = authentication.getName();
 
         Optional<ReaderDetails> optReaderDetails = readerService.findByUsername(username);
@@ -198,7 +221,11 @@ class ReaderController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<ReaderView> createReader(@Valid @RequestBody CreateReaderRequest request) throws ValidationException {
-        // Publica evento para criar usuário
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String correlationId = UUID.randomUUID().toString();
 
         readerService.createTemp(request, null, correlationId);
@@ -222,6 +249,11 @@ class ReaderController {
     @Operation(summary = "Deletes a reader photo")
     @DeleteMapping("/photo")
     public ResponseEntity<Void> deleteReaderPhoto(Authentication authentication) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String username = authentication.getName();
 
         Optional<ReaderDetails> optReaderDetails = readerService.findByUsername(username);
@@ -249,6 +281,10 @@ class ReaderController {
             Authentication authentication,
             final WebRequest request) {
 
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         final String ifMatchValue = request.getHeader(ConcurrencyService.IF_MATCH);
         if (ifMatchValue == null || ifMatchValue.isEmpty() || ifMatchValue.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -275,6 +311,10 @@ class ReaderController {
 
     @GetMapping("/top5")
     public ListResponse<ReaderView> getTop() {
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         return new ListResponse<>(readerViewMapper.toReaderView(readerService.findTopReaders(5)));
     }
 
@@ -284,6 +324,11 @@ class ReaderController {
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate)
     {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         final var books = readerService.findTopByGenre(genre,startDate,endDate);
 
         if(books.isEmpty())
@@ -295,6 +340,11 @@ class ReaderController {
     @PostMapping("/search")
     public ListResponse<ReaderView> searchReaders(
             @RequestBody final SearchRequest<SearchReadersQuery> request) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         final var readerList = readerService.searchReaders(request.getPage(), request.getQuery());
         return new ListResponse<>(readerViewMapper.toReaderView(readerList));
     }
