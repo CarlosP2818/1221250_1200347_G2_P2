@@ -29,7 +29,7 @@ public class BookMongo {
 
     private List<Long> authorsIds = new ArrayList<>();
 
-    private Description description;
+    private String description;
 
     private String photo;
 
@@ -42,7 +42,7 @@ public class BookMongo {
         this.isbn = isbn;
         this.title = title;
         if(description != null)
-            setDescription(new Description(description));
+            setDescription(description);
         if(genre==null)
             throw new IllegalArgumentException("Genre cannot be null");
         setGenreId(genre);

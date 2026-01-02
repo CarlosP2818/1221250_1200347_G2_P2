@@ -1,19 +1,14 @@
 package pt.psoft.g1.psoftg1.bookmanagement.model;
 
 import jakarta.annotation.Nullable;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.Transient;
-import jakarta.validation.constraints.Size;
 import pt.psoft.g1.psoftg1.shared.model.StringUtilsCustom;
 
-@Embeddable
-public class Description {
-    @Transient
-    private final int DESC_MAX_LENGTH = 4096;
+import java.io.Serializable;
 
-    @Size(max = DESC_MAX_LENGTH)
-    @Column(length = DESC_MAX_LENGTH)
+public class Description implements Serializable {
+
+    private static final int DESC_MAX_LENGTH = 4096;
+
     String description;
 
     public Description(String description) {
