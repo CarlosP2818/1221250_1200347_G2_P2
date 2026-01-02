@@ -29,7 +29,7 @@ services:
             - "27017:27017"
         environment:
             MONGO_INITDB_ROOT_USERNAME: mongoadmin
-            MONGO_INITDB_ROOT_PASSWORD: password
+            MONGO_INITDB_ROOT_PASSWORD: 48aed78edc140a47a9f5d53a
             MONGO_INITDB_DATABASE: books_1
         volumes:
             - mongo_data:/data/db

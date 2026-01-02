@@ -13,7 +13,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.jpa.BookJpaMapper;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.BookMongoMapper;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
@@ -40,9 +40,9 @@ public class BookController {
     private final BookService bookService;
     private final ConcurrencyService concurrencyService;
     private final FileStorageService fileStorageService;
-    private final BookJpaMapper bookJpaMapper;
 
     private final BookViewMapper bookViewMapper;
+    private final BookMongoMapper bookMongoMapper;
 
     @Operation(summary = "Register a new Book")
     @PutMapping()
@@ -72,7 +72,7 @@ public class BookController {
                 .build().toUri();
 
         return ResponseEntity.created(newBookUri)
-                .eTag(Long.toString(bookJpaMapper.toJpa(book).getVersion()))
+                .eTag(Long.toString(bookMongoMapper.toMongo(book).getVersion()))
                 .body(bookViewMapper.toBookView(book));
     }
 
@@ -85,7 +85,7 @@ public class BookController {
         BookView bookView = bookViewMapper.toBookView(book);
 
         return ResponseEntity.ok()
-                .eTag(Long.toString(bookJpaMapper.toJpa(book).getVersion()))
+                .eTag(Long.toString(bookMongoMapper.toMongo(book).getVersion()))
                 .body(bookView);
     }
 
@@ -99,7 +99,7 @@ public class BookController {
         }
 
         fileStorageService.deleteFile(book.getPhoto().getPhotoFile());
-        bookService.removeBookPhoto(book.getIsbn(), bookJpaMapper.toJpa(book).getVersion());
+        bookService.removeBookPhoto(book.getIsbn(), bookMongoMapper.toMongo(book).getVersion());
 
         return ResponseEntity.ok().build();
     }
@@ -157,7 +157,7 @@ public class BookController {
             throw new ConflictException("Could not update book: "+ e.getMessage());
         }
         return ResponseEntity.ok()
-                .eTag(Long.toString(bookJpaMapper.toJpa(book).getVersion()))
+                .eTag(Long.toString(bookMongoMapper.toMongo(book).getVersion()))
                 .body(bookViewMapper.toBookView(book));
     }
 

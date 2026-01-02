@@ -9,6 +9,7 @@ import pt.psoft.g1.psoftg1.bookmanagement.api.BookTempCreatedEvent;
 import pt.psoft.g1.psoftg1.bookmanagement.api.TempBook;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Isbn;
+import pt.psoft.g1.psoftg1.bookmanagement.model.Title;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +42,8 @@ public class RabbitMQPublisher {
             BookTempCreatedEvent event = new BookTempCreatedEvent(
                     tempBook.getSagaId(),
                     tempBook.getVersion(),
-                    tempBook.getIsbn(),
-                    tempBook.getTitle(),
+                    new Isbn(tempBook.getIsbn()),
+                    new Title(tempBook.getTitle()),
                     tempBook.getGenreId(),
                     tempBook.getAuthorsIds(),
                     tempBook.getDescription().toString()

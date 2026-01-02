@@ -35,5 +35,8 @@ public class TempBook {
     private UUID sagaId;
 
     @Getter @Setter
+    private Long version;
+
+    @Getter @Setter
     private boolean processed = false;
 }
