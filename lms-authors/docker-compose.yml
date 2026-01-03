@@ -1,23 +1,50 @@
-version: "3.9"
-
 services:
     author-service:
         image: lms-authors:latest
-        container_name: author-service
-        build: .
+        container_name: authors-service
+        build:
+            context: .
         ports:
-            - "8082:8080"
+            - "8088:8080"
+        depends_on:
+            - mongo_authors
         environment:
-            SPRING_PROFILES_ACTIVE: docker
-
-            SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/authors
-
+            SPRING_PROFILES_ACTIVE: mongo,bootstrap,base65,instance1
+            SPRING_DATA_MONGODB_URI: mongodb://mongoadmin:48aed78edc140a47a9f5d53a@mongo_authors:27017/authors_1?authSource=admin
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
 
+            FILE_UPLOAD_DIR: uploads
+
         networks:
             - lms_network
+        volumes:
+            - uploaded_files_volume_1:/tmp
+
+    mongo_authors:
+        image: mongo:6
+        container_name: mongo_authors
+        restart: unless-stopped
+        ports:
+            - "27018:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: mongoadmin
+            MONGO_INITDB_ROOT_PASSWORD: 48aed78edc140a47a9f5d53a
+            MONGO_INITDB_DATABASE: authors_1
+        volumes:
+            - mongo_data:/data/db
+        networks:
+            - lms_network
+        healthcheck:
+            test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
 networks:
     lms_network:
         external: true
+
+volumes:
+    mongo_data:
+    uploaded_files_volume_1:

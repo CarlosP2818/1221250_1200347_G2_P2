@@ -16,8 +16,8 @@ class BookTest {
 
     private final Isbn validIsbn = new Isbn("9782826012092");
     private final Title validTitle = new Title("Encantos de contar");
-    private final Long validGenreId = 1L;
-    private List<Long> authorsIds;
+    private final String validGenreId = "genre-123";
+    private List<String> authorsIds;
 
     @BeforeEach
     void setUp() {
@@ -26,21 +26,21 @@ class BookTest {
 
     @Test
     void ensureIsbnNotNull() {
-        authorsIds.add(1L);
+        authorsIds.add("author-1");
         assertThrows(IllegalArgumentException.class, () ->
                 new Book(null, validTitle, null, validGenreId, authorsIds, null));
     }
 
     @Test
     void ensureTitleNotNull() {
-        authorsIds.add(1L);
+        authorsIds.add("author-1");
         assertThrows(IllegalArgumentException.class, () ->
                 new Book(validIsbn, null, null, validGenreId, authorsIds, null));
     }
 
     @Test
     void ensureGenreNotNull() {
-        authorsIds.add(1L);
+        authorsIds.add("author-1");
         assertThrows(IllegalArgumentException.class, () ->
                 new Book(validIsbn, validTitle, null, null, authorsIds, null));
     }
@@ -59,8 +59,8 @@ class BookTest {
 
     @Test
     void ensureBookCreatedWithMultipleAuthors() {
-        authorsIds.add(1L);
-        authorsIds.add(2L);
+        authorsIds.add("author-1");
+        authorsIds.add("author-2");
         assertDoesNotThrow(() ->
                 new Book(validIsbn, validTitle, null, validGenreId, authorsIds, null));
     }

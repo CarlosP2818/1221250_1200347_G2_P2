@@ -1,58 +1,72 @@
 package pt.psoft.g1.psoftg1.configuration;
 
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-import pt.psoft.g1.psoftg1.shared.model.AuthorsEvents;
 
-@Profile("!test")
 @Configuration
-public  class RabbitConfig {
-
-    public static final String AUTHOR_EXCHANGE = "author.exchange";
+public class RabbitConfig {
 
     @Bean
-    public DirectExchange directExchange() {
-        return new DirectExchange(AUTHOR_EXCHANGE);
+    public DirectExchange authorExchange() {
+        return new DirectExchange("LMS.authors");
     }
 
+    @Bean
+    public DirectExchange bookRepliesExchange() {
+        return new DirectExchange("LMS.books.replies");
+    }
 
+    @Bean
+    public DirectExchange genreRepliesExchange() {
+        return new DirectExchange("LMS.genres.replies");
+    }
+
+    // Queues
     @Bean
     public Queue authorCreatedQueue() {
-        return new Queue("author-created-queue", true);
+        return new Queue("author.created.queue", true, false, false);
     }
 
     @Bean
-    public Queue tempAuthorCreatedQueue() {
-        return new Queue("temp-author-created-queue", true);
+    public Queue bookReplyQueue() {
+        return new Queue("author.book.reply.queue", true, false, false);
     }
 
     @Bean
-    public Binding bindingAuthorCreated(Queue authorCreatedQueue, DirectExchange directExchange) {
-        return BindingBuilder.bind(authorCreatedQueue)
-                .to(directExchange)
-                .with(AuthorsEvents.AUTHOR_CREATED);
+    public Queue genreReplyQueue() {
+        return new Queue("author.genre.reply.queue", true, false, false);
+    }
+
+    // Bindings
+    @Bean
+    public Binding authorCreatedBinding(DirectExchange authorExchange, Queue authorCreatedQueue) {
+        return BindingBuilder.bind(authorCreatedQueue).to(authorExchange).with("author.created");
     }
 
     @Bean
-    public Binding bindingTempAuthorCreated(Queue tempAuthorCreatedQueue, DirectExchange directExchange) {
-        return BindingBuilder.bind(tempAuthorCreatedQueue)
-                .to(directExchange)
-                .with(AuthorsEvents.AUTHOR_TEMP_CREATED);
+    public Binding bookReplyBinding(DirectExchange bookRepliesExchange, Queue bookReplyQueue) {
+        return BindingBuilder.bind(bookReplyQueue).to(bookRepliesExchange).with("book.created.reply");
     }
 
+    @Bean
+    public Binding genreReplyBinding(DirectExchange genreRepliesExchange, Queue genreReplyQueue) {
+        return BindingBuilder.bind(genreReplyQueue).to(genreRepliesExchange).with("genre.created.reply");
+    }
+
+    // Conversor JSON para envio/recepção de eventos
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
+
+    // RabbitAdmin
     @Bean
-    public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+    public RabbitAdmin rabbitAdmin(org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
         return new RabbitAdmin(connectionFactory);
     }
 }

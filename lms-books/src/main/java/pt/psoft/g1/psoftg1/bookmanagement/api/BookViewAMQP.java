@@ -22,10 +22,10 @@ public class BookViewAMQP {
     private String description;
 
     @NotNull
-    private List<Long> authorIds;
+    private List<String> authorIds;
 
     @NotNull
-    private Long genre;
+    private String genre;
 
     @NotNull
     private Long version;
@@ -34,7 +34,7 @@ public class BookViewAMQP {
     @Getter
     private Map<String, Object> _links = new HashMap<>();
 
-    public BookViewAMQP(String isbn, String title, String description, List<Long> authorsIds, Long genre) {
+    public BookViewAMQP(String isbn, String title, String description, List<String> authorsIds, String genre) {
         this.isbn = isbn;
         this.title = title;
         this.description = description;

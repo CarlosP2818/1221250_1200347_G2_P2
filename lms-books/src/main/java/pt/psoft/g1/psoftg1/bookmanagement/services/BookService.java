@@ -2,6 +2,7 @@ package pt.psoft.g1.psoftg1.bookmanagement.services;
 
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookView;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQP;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.BookMongoTemp;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -22,15 +23,18 @@ public interface BookService {
 
     Book update(BookViewAMQP bookViewAMQP);
 
-    List<Book> findByGenre(Long genre);
+    List<Book> findByGenre(String genre);
 
     List<Book> findByTitle(String title);
 
-    List<Book> findByAuthorsIds(List<Long> authorsIds);
+    List<Book> findByAuthorsIds(List<String> authorsIds);
 
     Book removeBookPhoto(String isbn, long desiredVersion);
 
     List<Book> searchBooks(Page page, SearchBooksQuery query);
 
     Book save(Book book);
+
+    BookMongoTemp createTemp(CreateBookRequest request, String photoURI, String correlationId);
+
 }

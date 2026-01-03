@@ -14,7 +14,7 @@ public class BookTempCreatedEvent {
     private Long version;
     private Isbn isbn;
     private Title title;
-    private Long genreId;
-    private List<Long> authorsIds;
+    private String genreId;
+    private List<String> authorsIds;
     private String description;
 }

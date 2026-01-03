@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.BookMongo;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
+import pt.psoft.g1.psoftg1.bookmanagement.model.Description;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Isbn;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Title;
 import pt.psoft.g1.psoftg1.shared.services.IdGenerators.IdGenerator;
@@ -26,7 +27,7 @@ public class BookMongoMapper {
         Book book = new Book(
                 new Isbn(mongo.getIsbn()),
                 new Title(mongo.getTitle()),
-                mongo.getDescription(),
+                new Description(mongo.getDescription()),
                 mongo.getGenreId(),
                 mongo.getAuthorsIds(),
                 mongo.getPhoto() != null ? mongo.getPhoto() : null
@@ -47,7 +48,9 @@ public class BookMongoMapper {
                         : null,
                 book.getGenreId(),
                 book.getAuthorsIds(),
-                book.getPhoto().getPhotoFile()
+                book.getPhoto() != null && book.getPhoto().getPhotoFile() != null
+                        ? book.getPhoto().getPhotoFile()
+                        : null
         );
     }
 }

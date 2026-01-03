@@ -25,11 +25,11 @@ public class BookMongo {
 
     private String title;
 
-    private Long genreId;
+    private String genreId;
 
-    private List<Long> authorsIds = new ArrayList<>();
+    private List<String> authorsIds = new ArrayList<>();
 
-    private Description description;
+    private String description;
 
     private String photo;
 
@@ -37,12 +37,12 @@ public class BookMongo {
         // got ORM only
     }
 
-    public BookMongo(String pk, String isbn, String title, String description, Long genre, List<Long> authors, String photo) {
+    public BookMongo(String pk, String isbn, String title, String description, String genre, List<String> authors, String photo) {
         this.pk = pk;
         this.isbn = isbn;
         this.title = title;
         if(description != null)
-            setDescription(new Description(description));
+            setDescription(description);
         if(genre==null)
             throw new IllegalArgumentException("Genre cannot be null");
         setGenreId(genre);

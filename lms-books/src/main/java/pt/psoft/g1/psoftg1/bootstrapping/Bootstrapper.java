@@ -45,8 +45,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789720706386"),
                     new Title("O País das Pessoas de Pernas Para o Ar"),
                     new Description("Fazendo uso do humor e do nonsense, o livro reúne quatro histórias divertidas e com múltiplos significados."),
-                    1L,  // Id do género (pode ser hardcoded)
-                    List.of(1L), // Id dos autores (hardcoded)
+                    "1",  // Id do género (pode ser hardcoded)
+                    List.of("1"), // Id dos autores (hardcoded)
                     null
             );
             bookRepository.save(book);
@@ -58,8 +58,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789723716160"),
                     new Title("Como se Desenha Uma Casa"),
                     new Description("Como quem, vindo de países distantes, chega finalmente aonde sempre esteve."),
-                    2L,
-                    List.of(2L),
+                    "2",
+                    List.of("2"),
                     null
             );
             bookRepository.save(book);
@@ -71,8 +71,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789895612864"),
                     new Title("C e Algoritmos"),
                     new Description("O C é uma linguagem de programação incontornável e precursor de várias linguagens modernas."),
-                    3L,
-                    List.of(3L),
+                    "3",
+                    List.of("3"),
                     null
             );
             bookRepository.save(book);
@@ -84,8 +84,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9782722203402"),
                     new Title("Introdução ao Desenvolvimento Moderno para a Web"),
                     new Description("Livro focado no desenvolvimento moderno de aplicações Web, divididas em front-end e back-end."),
-                    3L,
-                    List.of(4L, 5L),
+                    "4",
+                    List.of("4", "5"),
                     null
             );
             bookRepository.save(book);
@@ -97,8 +97,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789722328296"),
                     new Title("O Principezinho"),
                     new Description("Depois de deixar o seu asteroide, o principezinho chega à Terra e conta todas as aventuras que viveu."),
-                    1L,
-                    List.of(6L),
+                    "5",
+                    List.of("6"),
                     "bookPhotoTest.jpg"
             );
             bookRepository.save(book);
@@ -110,8 +110,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789895702756"),
                     new Title("A Criada Está a Ver"),
                     new Description("MILLIE, a memorável protagonista, está de volta. História cheia de suspense e mistério."),
-                    4L,
-                    List.of(7L),
+                    "4",
+                    List.of("7"),
                     null
             );
             bookRepository.save(book);
@@ -123,8 +123,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789897776090"),
                     new Title("O Hobbit"),
                     new Description("Bilbo Baggins vive uma aventura inesperada com Gandalf e treze anões."),
-                    5L,
-                    List.of(8L),
+                    "5",
+                    List.of("8"),
                     null
             );
             bookRepository.save(book);
@@ -136,8 +136,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789896379636"),
                     new Title("Histórias de Vigaristas e Canalhas"),
                     new Description("Contos sobre vigaristas e canalhas, organizados por George R. R. Martin e Gardner Dozois."),
-                    5L,
-                    List.of(8L, 9L),
+                    "5",
+                    List.of("8, 9"),
                     null
             );
             bookRepository.save(book);
@@ -149,8 +149,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789896378905"),
                     new Title("Histórias de Aventureiros e Patifes"),
                     new Description("Contos sobre patifes, mercenários e vigaristas organizados por George R. R. Martin e Gardner Dozois."),
-                    5L,
-                    List.of(8L, 9L),
+                    "5",
+                    List.of("8", "9"),
                     null
             );
             bookRepository.save(book);
@@ -162,8 +162,8 @@ public class Bootstrapper implements CommandLineRunner {
                     new Isbn("9789896375225"),
                     new Title("Windhaven"),
                     new Description("Novo planeta com voadores de asas metálicas, onde Maris desafia a tradição para conquistar os céus."),
-                    5L,
-                    List.of(8L, 10L),
+                    "5",
+                    List.of("8", "10"),
                     null
             );
             bookRepository.save(book);

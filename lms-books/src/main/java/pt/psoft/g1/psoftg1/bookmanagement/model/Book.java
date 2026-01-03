@@ -8,38 +8,34 @@ import org.hibernate.StaleObjectStateException;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.shared.model.EntityWithPhoto;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-@Entity
-@Table(name = "Book", uniqueConstraints = { @UniqueConstraint(name = "uc_book_isbn", columnNames = { "ISBN" }) })
-public class Book extends EntityWithPhoto {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    long pk;
+public class Book extends EntityWithPhoto implements Serializable {
 
     @Version
     @Getter
     private Long version;
 
-    @Embedded
+    @Setter
     Isbn isbn;
 
     @Getter
-    @Embedded
-    @NotNull
+    @Setter
     Title title;
 
     @Getter
-    @NotNull
-    Long genreId;
+    @Setter
+    String genreId;
 
     @Getter
-    private List<Long> authorsIds = new ArrayList<>();
+    @Setter
+    private List<String> authorsIds = new ArrayList<>();
 
-    @Embedded
+    @Setter
     Description description;
 
     @Setter
@@ -52,32 +48,11 @@ public class Book extends EntityWithPhoto {
     @Getter
     private BookStatus status = BookStatus.STARTED;
 
-
-    public void setTitle(Title title) {
-        this.title = title;
-    }
-
-    public void setIsbn(Isbn isbn) {
-        this.isbn = isbn;
-    }
-
-    public void setDescription(Description description) {
-        this.description = description;
-    }
-
-    public void setGenreId(Long genre) {
-        this.genreId = genre;
-    }
-
-    public void setAuthorsIds(List<Long> authors) {
-        this.authorsIds = authors;
-    }
-
     public String getDescription() {
         return this.description.toString();
     }
 
-    public Book(Isbn isbn, Title title, Description description, Long genreId, List<Long> authorsIds, String photoURI) {
+    public Book(Isbn isbn, Title title, Description description, String genreId, List<String> authorsIds, String photoURI) {
         if (isbn == null) throw new IllegalArgumentException("ISBN cannot be null");
         if (title == null) throw new IllegalArgumentException("Title cannot be null");
         if (genreId == null) throw new IllegalArgumentException("Genre cannot be null");
@@ -108,11 +83,11 @@ public class Book extends EntityWithPhoto {
                            final String title,
                            final String description,
                            final String photoURI,
-                           final Long genre,
-                           final List<Long> authors ) {
+                           final String genre,
+                           final List<String> authors ) {
 
         if (!Objects.equals(this.version, desiredVersion))
-            throw new StaleObjectStateException("Object was already modified by another user", this.pk);
+            throw new StaleObjectStateException(Book.class.getName(), this.isbn);
 
         if (title != null) {
             setTitle(new Title(title));

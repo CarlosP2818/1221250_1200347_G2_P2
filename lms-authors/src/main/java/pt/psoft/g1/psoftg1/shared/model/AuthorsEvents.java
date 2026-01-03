@@ -1,8 +1,8 @@
 package pt.psoft.g1.psoftg1.shared.model;
 
 public interface AuthorsEvents {
-    public static final String AUTHOR_CREATED = "BOOK_CREATED";
-    public static final String AUTHOR_UPDATED = "BOOK_UPDATED";
-    public static final String AUTHOR_DELETED = "BOOK_DELETED";
-    public static final String AUTHOR_TEMP_CREATED = "author-temp-created";
+    public final String AUTHOR_CREATED = "AUTHOR_CREATED";
+    public final String AUTHOR_UPDATED = "AUTHOR_UPDATED";
+    public final String AUTHOR_DELETED = "AUTHOR_DELETED";
+    public final String AUTHOR_TEMP_CREATED = "AUTHOR_TEMP_CREATED";
 }

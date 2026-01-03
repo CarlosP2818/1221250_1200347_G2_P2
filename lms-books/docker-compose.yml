@@ -7,10 +7,10 @@ services:
         ports:
             - "8087:8080"
         depends_on:
-            - mongo
+            - mongo_books
         environment:
             SPRING_PROFILES_ACTIVE: mongo,bootstrap,base65,instance1
-            SPRING_DATA_MONGODB_URI: mongodb://mongoadmin:password@mongo:27017/books_1
+            SPRING_DATA_MONGODB_URI: mongodb://mongoadmin:48aed78edc140a47a9f5d53a@mongo_books:27017/books_1?authSource=admin
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
 
@@ -21,9 +21,9 @@ services:
         volumes:
             - uploaded_files_volume_1:/tmp
 
-    mongo:
+    mongo_books:
         image: mongo:6
-        container_name: mongo
+        container_name: mongo_books
         restart: unless-stopped
         ports:
             - "27017:27017"
@@ -35,11 +35,6 @@ services:
             - mongo_data:/data/db
         networks:
             - lms_network
-        healthcheck:
-            test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
 
 networks:
     lms_network:
