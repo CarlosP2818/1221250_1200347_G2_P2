@@ -5,14 +5,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-@Profile("!test")
 @Configuration
-public  class RabbitmqClientConfig {
+public  class RabbitConfig {
 
     @Bean
     public DirectExchange direct() {
         return new DirectExchange("LMS.genre");
     }
+
+    @Bean
+    public DirectExchange genreExchange() {
+        return new DirectExchange("genre.events.exchange");
+    }
+
 
     private static class ReceiverConfig {
 

@@ -23,10 +23,10 @@ public class TempBook {
     private String title;
 
     @Getter @Setter @NotNull
-    private Long genreId;
+    private String genreId;
 
     @Getter @Setter
-    private List<Long> authorsIds = new ArrayList<>();
+    private List<String> authorsIds = new ArrayList<>();
 
     @Getter @Setter
     private String description;

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQP;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.BookMongoTemp;
 import pt.psoft.g1.psoftg1.bookmanagement.model.*;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
 import lombok.RequiredArgsConstructor;
@@ -98,6 +99,11 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    public BookMongoTemp createTemp(CreateBookRequest request, String photoURI, String correlationId) {
+        return null;
+    }
+
+    @Override
     @Transactional
     @CacheEvict(value = "books", key = "#isbn")
     public Book removeBookPhoto(String isbn, long desiredVersion) {
@@ -122,10 +128,10 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new NotFoundException(Book.class, isbn));
     }
 
-    public List<Book> getBooksSuggestionsForReader(List<Long> genreIds) {
+    public List<Book> getBooksSuggestionsForReader(List<String> genreIds) {
         List<Book> books = new ArrayList<>();
 
-        for (Long genreId : genreIds) {
+        for (String genreId : genreIds) {
             List<Book> tempBooks = bookRepository.findByGenreId(genreId);
             if (tempBooks.isEmpty()) continue;
 
@@ -153,7 +159,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Cacheable(value = "booksByGenre", key = "#genre")
-    public List<Book> findByGenre(Long genre) {
+    public List<Book> findByGenre(String genre) {
         return bookRepository.findByGenreId(genre);
     }
 
@@ -165,7 +171,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Cacheable(value = "booksByAuthor", key = "#authorName")
-    public List<Book> findByAuthorsIds(List<Long> authorsIds) {
+    public List<Book> findByAuthorsIds(List<String> authorsIds) {
         return bookRepository.findByAuthorIds(authorsIds);
     }
 
@@ -195,5 +201,6 @@ public class BookServiceImpl implements BookService {
         );
         return this.update(request, bookViewAMQP.getVersion());
     }
+
 
 }

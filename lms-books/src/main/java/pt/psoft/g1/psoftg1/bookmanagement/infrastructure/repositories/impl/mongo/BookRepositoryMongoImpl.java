@@ -26,7 +26,7 @@ public class BookRepositoryMongoImpl implements BookRepository {
     private final BookMongoMapper bookMongoMapper;
 
     @Override
-    public List<Book> findByGenreId(Long genreId) {
+    public List<Book> findByGenreId(String genreId) {
         Query query = new Query(Criteria.where("genreId").is(genreId));
         return mongoTemplate.find(query, BookMongo.class)
                 .stream()
@@ -51,7 +51,7 @@ public class BookRepositoryMongoImpl implements BookRepository {
     }
 
     @Override
-    public List<Book> findByAuthorIds(List<Long> authorsIds) {
+    public List<Book> findByAuthorIds(List<String> authorsIds) {
         Query query = new Query(
                 Criteria.where("authorsIds").in(authorsIds)
         );

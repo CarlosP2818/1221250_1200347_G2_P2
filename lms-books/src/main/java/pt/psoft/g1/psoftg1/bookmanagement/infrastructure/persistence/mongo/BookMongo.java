@@ -25,9 +25,9 @@ public class BookMongo {
 
     private String title;
 
-    private Long genreId;
+    private String genreId;
 
-    private List<Long> authorsIds = new ArrayList<>();
+    private List<String> authorsIds = new ArrayList<>();
 
     private String description;
 
@@ -37,7 +37,7 @@ public class BookMongo {
         // got ORM only
     }
 
-    public BookMongo(String pk, String isbn, String title, String description, Long genre, List<Long> authors, String photo) {
+    public BookMongo(String pk, String isbn, String title, String description, String genre, List<String> authors, String photo) {
         this.pk = pk;
         this.isbn = isbn;
         this.title = title;

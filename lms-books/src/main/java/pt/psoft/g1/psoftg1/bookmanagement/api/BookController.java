@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,8 @@ import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.SearchBooksQuery;
 import pt.psoft.g1.psoftg1.bookmanagement.services.UpdateBookRequest;
+import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.BookReplyListener;
+import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.Publisher;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
@@ -26,10 +29,7 @@ import pt.psoft.g1.psoftg1.shared.services.ConcurrencyService;
 import pt.psoft.g1.psoftg1.shared.services.FileStorageService;
 import pt.psoft.g1.psoftg1.shared.services.SearchRequest;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Tag(name = "Books", description = "Endpoints for managing Books")
@@ -43,12 +43,21 @@ public class BookController {
 
     private final BookViewMapper bookViewMapper;
     private final BookMongoMapper bookMongoMapper;
+    private final BookReplyListener bookReplyListener;
+
+    private final Publisher publisher;
+
+    @Value("${feature.maintenance.killswitch}")
+    private boolean isKilled;
 
     @Operation(summary = "Register a new Book")
     @PutMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<BookView> create( CreateBookRequest resource) {
+    public ResponseEntity<BookView> create(@RequestBody CreateBookRequest resource) {
 
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         //Guarantee that the client doesn't provide a link on the body, null = no photo or error
         resource.setPhotoURI(null);
@@ -60,25 +69,40 @@ public class BookController {
             resource.setPhotoURI(fileName);
         }
 
-        Book book;
-        try {
-            book = bookService.create(resource);
-        }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        //final var savedBook = bookService.save(book);
-        final var newBookUri = ServletUriComponentsBuilder.fromCurrentRequestUri()
-                .pathSegment(book.getIsbn())
-                .build().toUri();
+        String correlationId = UUID.randomUUID().toString();
 
-        return ResponseEntity.created(newBookUri)
-                .eTag(Long.toString(bookMongoMapper.toMongo(book).getVersion()))
-                .body(bookViewMapper.toBookView(book));
+        bookService.createTemp(resource, null, correlationId);
+
+        // 1. Guardar contexto local
+        bookReplyListener.registerCreateBook(
+                correlationId,
+                resource
+        );
+
+        // 2. Publicar evento para criar User
+        publisher.sendCreateAuthorEvent(
+                resource,
+                correlationId
+        );
+
+        publisher.sendCreateGenreEvent(
+                resource,
+                correlationId
+        );
+
+        // 4. Responder ao cliente que o processo começou
+        return ResponseEntity.accepted()
+                .header("X-Correlation-ID", correlationId)
+                .build();
     }
 
     @Operation(summary = "Gets a specific Book by isbn")
     @GetMapping(value = "/{isbn}")
     public ResponseEntity<BookView> findByIsbn(@PathVariable final String isbn) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         final var book = bookService.findByIsbn(isbn);
 
@@ -92,6 +116,10 @@ public class BookController {
     @Operation(summary = "Deletes a book photo")
     @DeleteMapping("/{isbn}/photo")
     public ResponseEntity<Void> deleteBookPhoto(@PathVariable("isbn") final String isbn) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         var book = bookService.findByIsbn(isbn);
         if(book.getPhoto() == null) {
@@ -108,6 +136,10 @@ public class BookController {
     @GetMapping("/{isbn}/photo")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<byte[]> getSpecificBookPhoto(@PathVariable("isbn") final String isbn){
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         Book book = bookService.findByIsbn(isbn);
 
@@ -134,6 +166,10 @@ public class BookController {
     public ResponseEntity<BookView> updateBook(@PathVariable final String isbn,
                                                final WebRequest request,
                                                @Valid final UpdateBookRequest resource) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         final String ifMatchValue = request.getHeader(ConcurrencyService.IF_MATCH);
         if (ifMatchValue == null || ifMatchValue.isEmpty() || ifMatchValue.equals("null")) {
@@ -164,11 +200,15 @@ public class BookController {
     @Operation(summary = "Gets Books by title or genre")
     @GetMapping
     public ListResponse<BookView> findBooks(@RequestParam(value = "title", required = false) final String title,
-                                            @RequestParam(value = "genre", required = false) final Long genre,
-                                            @RequestParam(value = "authorName", required = false) final List<Long> authorName) {
+                                            @RequestParam(value = "genre", required = false) final String genre,
+                                            @RequestParam(value = "authorName", required = false) final List<String> authorName) {
 
         //Este método, como está, faz uma junção 'OR'.
         //Para uma junção 'AND', ver o "/search"
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         List<Book> booksByTitle = null;
         if (title != null)
@@ -203,6 +243,10 @@ public class BookController {
     @PostMapping("/search")
     public ListResponse<BookView> searchBooks(
             @RequestBody final SearchRequest<SearchBooksQuery> request) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
         final var bookList = bookService.searchBooks(request.getPage(), request.getQuery());
         return new ListResponse<>(bookViewMapper.toBookView(bookList));
     }

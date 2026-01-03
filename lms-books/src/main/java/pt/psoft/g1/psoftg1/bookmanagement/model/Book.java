@@ -29,11 +29,11 @@ public class Book extends EntityWithPhoto implements Serializable {
 
     @Getter
     @Setter
-    Long genreId;
+    String genreId;
 
     @Getter
     @Setter
-    private List<Long> authorsIds = new ArrayList<>();
+    private List<String> authorsIds = new ArrayList<>();
 
     @Setter
     Description description;
@@ -52,7 +52,7 @@ public class Book extends EntityWithPhoto implements Serializable {
         return this.description.toString();
     }
 
-    public Book(Isbn isbn, Title title, Description description, Long genreId, List<Long> authorsIds, String photoURI) {
+    public Book(Isbn isbn, Title title, Description description, String genreId, List<String> authorsIds, String photoURI) {
         if (isbn == null) throw new IllegalArgumentException("ISBN cannot be null");
         if (title == null) throw new IllegalArgumentException("Title cannot be null");
         if (genreId == null) throw new IllegalArgumentException("Genre cannot be null");
@@ -83,8 +83,8 @@ public class Book extends EntityWithPhoto implements Serializable {
                            final String title,
                            final String description,
                            final String photoURI,
-                           final Long genre,
-                           final List<Long> authors ) {
+                           final String genre,
+                           final List<String> authors ) {
 
         if (!Objects.equals(this.version, desiredVersion))
             throw new StaleObjectStateException(Book.class.getName(), this.isbn);

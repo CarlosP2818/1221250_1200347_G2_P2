@@ -35,11 +35,6 @@ services:
             - mongo_data:/data/db
         networks:
             - lms_network
-        healthcheck:
-            test: ["CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
 
 networks:
     lms_network:
