@@ -22,23 +22,4 @@ public class AuthorRabbitListener {
     private final DirectExchange direct;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @RabbitListener(queues = "author-temp-created-queue")
-    public void handleTempAuthorCreation(String payload) throws Exception {
-        AuthorTempCreatedEvent event = objectMapper.readValue(payload, AuthorTempCreatedEvent.class);
-
-        // Cria autor temporário
-        TempAuthor tempAuthor = new TempAuthor();
-        tempAuthor.setName(event.getName());
-        tempAuthor.setBio(event.getBio());
-        tempAuthor.setSagaId(event.getSagaId());
-
-        tempAuthorRepository.save(tempAuthor);
-
-        // Cria evento de retorno com ID do autor
-        var confirmationEvent = new AuthorCreatedEvent(event.getSagaId(), tempAuthor.getId());
-
-        String response = objectMapper.writeValueAsString(confirmationEvent);
-        template.convertAndSend(direct.getName(), "author-created", response);
-    }
 }

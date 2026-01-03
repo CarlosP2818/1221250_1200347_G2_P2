@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import pt.psoft.g1.psoftg1.authormanagement.api.AuthorRabbitmqController;
+import pt.psoft.g1.psoftg1.authormanagement.services.AuthorService;
 import pt.psoft.g1.psoftg1.shared.model.AuthorsEvents;
 
 @Profile("!test")
@@ -16,7 +18,6 @@ public class RabbitmqClientConfig {
         return new DirectExchange("LMS.authors");
     }
 
-    @Configuration
     public static class ReceiverConfig {
 
         @Bean(name = "autoDeleteQueue_Author_Created")
@@ -58,6 +59,11 @@ public class RabbitmqClientConfig {
             return BindingBuilder.bind(autoDeleteQueue_Author_Deleted)
                     .to(direct)
                     .with(AuthorsEvents.AUTHOR_DELETED);
+        }
+
+        @Bean
+        public AuthorRabbitmqController receiver(AuthorService authorService, @Qualifier("autoDeleteQueue_Author_Created") Queue autoDeleteQueue_Author_Created) {
+            return new AuthorRabbitmqController();
         }
     }
 }
