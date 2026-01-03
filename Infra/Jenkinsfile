@@ -2,87 +2,38 @@ pipeline {
     agent any
 
     environment {
+        // ID da credencial que criaste no Jenkins para o Docker Hub
+        DOCKER_CREDS = 'docker-hub-credentials'
         DOCKER_REGISTRY = "carlosp2818"
         APP_USERS = "lms-authnusers"
-        APP_READERS = "lms-readers"
     }
 
     stages {
-        stage('Build & Push Images') {
+        stage('Build & Push with Plugin') {
             steps {
                 script {
-                    echo "Building Images..."
-                    // Saímos de infra/ e entramos em users/
-                    dir('../lms-authnusers') {
-                        sh "docker compose build"
-                        sh "docker tag ${APP_USERS}:latest ${DOCKER_REGISTRY}/${APP_USERS}:${BUILD_ID}"
+                    // 1. Build da imagem usando o contexto da pasta correta
+                    // O plugin procura o Dockerfile automaticamente na pasta indicada
+                    def userImage = docker.build("${DOCKER_REGISTRY}/${APP_USERS}:${env.BRANCH_NAME}-${env.BUILD_ID}", "-f ../users/Dockerfile ../users")
+
+                    // 2. Login e Push automáticos
+                    // 'docker-hub-credentials' deve ser do tipo "Username with password" no Jenkins
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDS) {
+                        userImage.push()
+                        userImage.push('latest') // Opcional: faz push também como latest
                     }
-                    // Saímos de infra/ e entramos em readers/
-                    dir('../lms-readers') {
-                        sh "docker compose build"
-                        sh "docker tag ${APP_READERS}:latest ${DOCKER_REGISTRY}/${APP_READERS}:${BUILD_ID}"
-                    }
                 }
             }
         }
 
-        stage('Infrastructure & Smoke Tests') {
+        stage('Deploy with Compose') {
             steps {
-                echo "Iniciando Infraestrutura (Base de Dados)..."
-                // Como o Jenkinsfile está na pasta infra, aqui não precisamos de dir()
-                sh "docker compose up -d"
-
-                echo "Iniciando microserviço para testes..."
+                echo "Fazendo deploy via Compose..."
                 dir('../lms-authnusers') {
-                    sh "docker compose up -d"
-                }
-
-                sh "sleep 15"
-                // O healthcheck deve apontar para a porta do teu gateway ou serviço
-                sh "curl -f http://localhost:8080/health || (echo 'Serviço offline' && exit 1)"
-            }
-        }
-
-        stage('Deploy Service A (Users) - Automatic') {
-            steps {
-                echo "Deploy automático de Users..."
-                dir('../lms-authnusers') {
+                    // Para o Compose, ainda usamos o SH porque o plugin foca em imagens individuais
                     sh "docker compose up -d"
                 }
             }
-        }
-
-        stage('Manual Approval Service B (Readers)') {
-            steps {
-                input message: "Aprovar deploy do Service Readers?", ok: "Deploy"
-            }
-        }
-
-        stage('Deploy Service B (Readers)') {
-            steps {
-                dir('../lms-readers') {
-                    sh "docker compose up -d"
-                }
-            }
-        }
-
-        stage('Load Tests & Scaling') {
-            steps {
-                echo "Escalando Users para 3 instâncias..."
-                dir('../lms-authnusers') {
-                    sh "docker compose up -d --scale users=3"
-                }
-            }
-        }
-    }
-
-    post {
-        failure {
-            echo "A executar Rollback..."
-            dir('../lms-authnusers') { sh "docker compose down && docker compose up -d" }
-        }
-        always {
-            sh "docker image prune -f"
         }
     }
 }
