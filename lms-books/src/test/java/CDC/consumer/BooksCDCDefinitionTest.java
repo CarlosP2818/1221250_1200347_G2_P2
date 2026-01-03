@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import pt.psoft.g1.psoftg1.bookmanagement.api.BookRabbitmqController;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
 
 import java.util.HashMap;
