@@ -7,7 +7,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.authormanagement.api.AuthorTempCreatedEvent;
-import pt.psoft.g1.psoftg1.authormanagement.api.TempAuthor;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 
 @Service
@@ -28,7 +28,7 @@ public class RabbitMQPublisher {
         }
     }
 
-    public void publishTempAuthorCreated(TempAuthor author) {
+    public void publishTempAuthorCreated(OutboxEventMongo author) {
         try {
             AuthorTempCreatedEvent event = new AuthorTempCreatedEvent(author.getSagaId(), author.getName(), author.getBio());
             String payload = objectMapper.writeValueAsString(event);

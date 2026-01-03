@@ -1,8 +1,7 @@
 package pt.psoft.g1.psoftg1.bookmanagement.services;
 
-import pt.psoft.g1.psoftg1.bookmanagement.api.BookView;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQP;
-import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.BookMongoTemp;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -35,6 +34,6 @@ public interface BookService {
 
     Book save(Book book);
 
-    BookMongoTemp createTemp(CreateBookRequest request, String photoURI, String correlationId);
+    OutboxEventMongo createTemp(CreateBookRequest request, String photoURI, String correlationId);
 
 }

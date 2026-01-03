@@ -10,16 +10,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQP;
-import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.BookMongoTemp;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.OutboxEventMongo;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.BookMongoMapper;
 import pt.psoft.g1.psoftg1.bookmanagement.model.*;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
 import lombok.RequiredArgsConstructor;
+import pt.psoft.g1.psoftg1.bookmanagement.repositories.OutboxEventRepository;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.external.service.BookIsbnGateway;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +33,9 @@ public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
     private final PhotoRepository photoRepository;
     private final BookIsbnGateway isbnGateway;
+    private final BookMongoMapper bookMongoMapper;
+
+    private final OutboxEventRepository outboxRepository;
 
     @Value("${suggestionsLimitPerGenre}")
     private long suggestionsLimitPerGenre;
@@ -55,7 +61,19 @@ public class BookServiceImpl implements BookService {
                 request.getPhotoURI()
         );
 
-        return bookRepository.save(newBook);
+        bookRepository.save(newBook);
+
+        OutboxEventMongo event = new OutboxEventMongo();
+        event.setAggregateType("Book");
+        event.setAggregateId(bookMongoMapper.toMongo(newBook).getIsbn());
+        event.setType("BOOK_CREATED");
+        event.setCorrelationId(request.getCorrelationId());
+        event.setCreatedAt(LocalDateTime.now());
+        event.setProcessed(false);
+
+        outboxRepository.save(event);
+
+        return newBook;
     }
 
 
@@ -99,7 +117,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public BookMongoTemp createTemp(CreateBookRequest request, String photoURI, String correlationId) {
+    public OutboxEventMongo createTemp(CreateBookRequest request, String photoURI, String correlationId) {
         return null;
     }
 

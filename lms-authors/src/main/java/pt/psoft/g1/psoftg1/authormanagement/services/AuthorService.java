@@ -1,7 +1,7 @@
 package pt.psoft.g1.psoftg1.authormanagement.services;
 
 import pt.psoft.g1.psoftg1.authormanagement.api.BookShortView;
-import pt.psoft.g1.psoftg1.authormanagement.api.TempAuthor;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 
 import java.util.List;
@@ -24,5 +24,5 @@ public interface AuthorService {
 
     Optional<Author> removeAuthorPhoto(String authorNumber, long desiredVersion);
 
-    TempAuthor createTempAuthor(String name, String bio, UUID sagaId);
+    OutboxEventMongo createTempAuthor(String name, String bio, UUID sagaId);
 }

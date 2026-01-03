@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
-import pt.psoft.g1.psoftg1.authormanagement.repositories.TempAuthorRepository;
 
 @Component
 @RequiredArgsConstructor

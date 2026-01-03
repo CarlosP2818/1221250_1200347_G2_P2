@@ -6,7 +6,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.genremanagement.api.GenreTempCreatedEvent;
-import pt.psoft.g1.psoftg1.genremanagement.api.TempGenre;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 
 @Service
@@ -27,7 +27,7 @@ public class RabbitMQPublisher {
         }
     }
 
-    public void publishTempGenreCreated(TempGenre genre) {
+    public void publishTempGenreCreated(OutboxEventMongo genre) {
         try {
             GenreTempCreatedEvent event = new GenreTempCreatedEvent(genre.getSagaId(), genre.getGenre());
             String message = objectMapper.writeValueAsString(event);

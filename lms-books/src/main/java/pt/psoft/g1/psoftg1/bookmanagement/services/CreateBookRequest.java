@@ -36,4 +36,8 @@ public class CreateBookRequest {
 
     @NotNull
     private List<String> authorsIds;
+
+    @Getter
+    @Setter
+    private String correlationId;
 }
