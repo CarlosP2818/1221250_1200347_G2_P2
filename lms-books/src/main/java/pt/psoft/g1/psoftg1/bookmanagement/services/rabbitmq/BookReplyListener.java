@@ -39,7 +39,7 @@ public class BookReplyListener {
             return;
         }
 
-        request.setAuthorsIds(reply.book().getBook().getAuthorsIds()); // Marca Author como criado
+        request.setAuthorsIds(reply.authorId()); // Marca Author como criado
 
         tryCreateBookIfReady(request, reply.correlationId());
     }
