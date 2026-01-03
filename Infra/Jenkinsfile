@@ -16,7 +16,7 @@ pipeline {
                     echo "Building Image with tag: ${tag}"
 
                     // O contexto do build (../users) é essencial para o Docker encontrar o código
-                    def userImage = docker.build("${DOCKER_REGISTRY}/${APP_USERS}:${tag}", "-f ../users/Dockerfile ../users")
+                    def userImage = docker.build("${DOCKER_REGISTRY}/${APP_USERS}:${tag}", "-f ../lms-authnusers/Dockerfile ../lms-authnusers")
 
                     // Push para o Docker Hub
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDS) {
@@ -31,7 +31,7 @@ pipeline {
             steps {
                 echo "Iniciando Deploy..."
                 // Ajustado para o nome da pasta que mencionaste no log anterior
-                dir('../users') {
+                dir('../lms-authnusers') {
                     sh "docker compose up -d"
                 }
             }
