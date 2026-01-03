@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // ID da credencial que criaste no Jenkins para o Docker Hub
         DOCKER_CREDS = 'docker-hub-credentials'
         DOCKER_REGISTRY = "carlosp2818"
         APP_USERS = "lms-authnusers"
@@ -12,15 +11,17 @@ pipeline {
         stage('Build & Push with Plugin') {
             steps {
                 script {
-                    // 1. Build da imagem usando o contexto da pasta correta
-                    // O plugin procura o Dockerfile automaticamente na pasta indicada
-                    def userImage = docker.build("${DOCKER_REGISTRY}/${APP_USERS}:${env.BRANCH_NAME}-${env.BUILD_ID}", "-f ../users/Dockerfile ../users")
+                    // Como não é multibranch, definimos a tag manualmente ou usamos 'main'
+                    def tag = "main-${env.BUILD_ID}"
+                    echo "Building Image with tag: ${tag}"
 
-                    // 2. Login e Push automáticos
-                    // 'docker-hub-credentials' deve ser do tipo "Username with password" no Jenkins
+                    // O contexto do build (../users) é essencial para o Docker encontrar o código
+                    def userImage = docker.build("${DOCKER_REGISTRY}/${APP_USERS}:${tag}", "-f ../users/Dockerfile ../users")
+
+                    // Push para o Docker Hub
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDS) {
                         userImage.push()
-                        userImage.push('latest') // Opcional: faz push também como latest
+                        userImage.push('latest')
                     }
                 }
             }
@@ -28,12 +29,19 @@ pipeline {
 
         stage('Deploy with Compose') {
             steps {
-                echo "Fazendo deploy via Compose..."
-                dir('../lms-authnusers') {
-                    // Para o Compose, ainda usamos o SH porque o plugin foca em imagens individuais
+                echo "Iniciando Deploy..."
+                // Ajustado para o nome da pasta que mencionaste no log anterior
+                dir('../users') {
                     sh "docker compose up -d"
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Limpando imagens antigas..."
+            sh "docker image prune -f"
         }
     }
 }
