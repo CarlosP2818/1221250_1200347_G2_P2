@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.authormanagement.api;
+package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "author_temp")
-public class TempAuthor {
+public class OutboxEventMongo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

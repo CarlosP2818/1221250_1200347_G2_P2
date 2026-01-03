@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.services.AuthorService;
 import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
@@ -40,9 +41,9 @@ public class AuthorController {
     @Operation(summary = "Creates a new Author")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<TempAuthor> create(@Valid CreateAuthorRequest resource) {
+    public ResponseEntity<OutboxEventMongo> create(@Valid CreateAuthorRequest resource) {
         UUID sagaId = UUID.randomUUID(); // id único para a saga
-        TempAuthor temp = authorService.createTempAuthor(resource.getName(), resource.getBio(), sagaId);
+        OutboxEventMongo temp = authorService.createTempAuthor(resource.getName(), resource.getBio(), sagaId);
         return ResponseEntity.status(HttpStatus.CREATED).body(temp);
     }
 

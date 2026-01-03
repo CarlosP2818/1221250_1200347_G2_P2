@@ -1,6 +1,6 @@
 package pt.psoft.g1.psoftg1.genremanagement.services;
 
-import pt.psoft.g1.psoftg1.genremanagement.api.TempGenre;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 
 import java.util.Optional;
@@ -15,7 +15,7 @@ public interface GenreService {
 
     Optional<Genre> findByName(String name);
 
-    TempGenre createTempGenre(String genre, UUID sagaId);
+    OutboxEventMongo createTempGenre(String genre, UUID sagaId);
 
     Genre createGenre(Genre genre);
 

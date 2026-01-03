@@ -5,10 +5,9 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pt.psoft.g1.psoftg1.genremanagement.api.TempGenre;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.genremanagement.repositories.GenreRepository;
-import pt.psoft.g1.psoftg1.genremanagement.repositories.TempGenreRepository;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 
 import java.util.Optional;
@@ -52,18 +51,18 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    public TempGenre createTempGenre(String genre, UUID sagaId) {
+    public OutboxEventMongo createTempGenre(String genre, UUID sagaId) {
 
-        Optional<TempGenre> existing = tempGenreRepository.findBySagaId(sagaId);
+        Optional<OutboxEventMongo> existing = tempGenreRepository.findBySagaId(sagaId);
         if (existing.isPresent()) {
             return existing.get();
         }
 
-        TempGenre temp = new TempGenre();
+        OutboxEventMongo temp = new OutboxEventMongo();
         temp.setGenre(genre);
         temp.setSagaId(sagaId);
 
-        TempGenre saved = tempGenreRepository.save(temp);
+        OutboxEventMongo saved = tempGenreRepository.save(temp);
         rabbitMQPublisher.publishTempGenreCreated(saved);
 
         return saved;

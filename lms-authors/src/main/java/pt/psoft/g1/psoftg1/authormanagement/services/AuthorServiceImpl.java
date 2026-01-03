@@ -7,10 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.authormanagement.api.BookShortView;
-import pt.psoft.g1.psoftg1.authormanagement.api.TempAuthor;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
-import pt.psoft.g1.psoftg1.authormanagement.repositories.TempAuthorRepository;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 
@@ -74,8 +73,8 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
-    public TempAuthor createTempAuthor(String name, String bio, UUID sagaId) {
-        TempAuthor tempAuthor = new TempAuthor();
+    public OutboxEventMongo createTempAuthor(String name, String bio, UUID sagaId) {
+        OutboxEventMongo tempAuthor = new OutboxEventMongo();
         tempAuthor.setName(name);
         tempAuthor.setBio(bio);
         tempAuthor.setSagaId(sagaId);
