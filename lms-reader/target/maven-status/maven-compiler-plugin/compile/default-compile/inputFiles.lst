@@ -1,7 +1,9 @@
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\GlobalExceptionHandler.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\persistence\jpa\EntityWithPhotoEmbeddable.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\TestBody.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\ReaderDetailsJpaTemp.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\persistence\mongo\NameEmbeddableMongo.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\Dto\CreateReaderRequestDto.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\configuration\RabbitConfig.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\Publisher.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\mongo\ReaderDetailsRepositoryMongoImpl.java
@@ -19,6 +21,7 @@ C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\ConcurrencyService.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\FileStorageService.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\model\ReaderDetails.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\repositories\ReaderDetailsTempRepository.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\PhoneNumberEmbedded.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\api\MapperInterface.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\mongo\ReaderDetailsMongo.java
@@ -42,11 +45,12 @@ C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\mongo\PhoneNumberMongo.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\IdGenerators\IdGenerator.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderServiceImpl.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\jpa\SpringReaderDetailsJpaTempRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\configuration\SecurityConfig.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\ForbiddenName.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\repositories\PhotoRepository.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\GetUserByUsernameEvent.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\ForbiddenNameServiceImpl.java
-C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderCreatedEvent.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\infrastructure\repositories\impl\SpringDataForbiddenNameRepository.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderAverageDto.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\UserEvents.java
@@ -65,6 +69,7 @@ C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\FileUtils.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderViewMapper.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\model\StringUtilsCustom.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\jpa\ReaderDetailsJpaTempRepositoryImpl.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\persistence\jpa\ReaderNumberEmbedded.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\shared\services\FileStorageProperties.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\service\HistoricalEventsResponse.java
@@ -75,6 +80,7 @@ C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderLendingsAvgPerMonthDto.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\api\ReaderCountView.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\infraestructure\repositories\impl\MongoReaderRepository.java
+C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\rabbitmq\events\ReaderCreatedEvent.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderBookCountDTO.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\readermanagement\services\ReaderService.java
 C:\Users\User\Desktop\1221250_1200347_G2_P2\lms-reader\src\main\java\pt\psoft\g1\psoftg1\exceptions\NotFoundException.java

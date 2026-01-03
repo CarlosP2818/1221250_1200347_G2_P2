@@ -1,0 +1,88 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = "carlosp2818"
+        APP_USERS = "lms-authnusers"
+        APP_READERS = "lms-readers"
+    }
+
+    stages {
+        stage('Build & Push Images') {
+            steps {
+                script {
+                    echo "Building Images..."
+                    // Saímos de infra/ e entramos em users/
+                    dir('../lms-authnusers') {
+                        sh "docker compose build"
+                        sh "docker tag ${APP_USERS}:latest ${DOCKER_REGISTRY}/${APP_USERS}:${BUILD_ID}"
+                    }
+                    // Saímos de infra/ e entramos em readers/
+                    dir('../lms-readers') {
+                        sh "docker compose build"
+                        sh "docker tag ${APP_READERS}:latest ${DOCKER_REGISTRY}/${APP_READERS}:${BUILD_ID}"
+                    }
+                }
+            }
+        }
+
+        stage('Infrastructure & Smoke Tests') {
+            steps {
+                echo "Iniciando Infraestrutura (Base de Dados)..."
+                // Como o Jenkinsfile está na pasta infra, aqui não precisamos de dir()
+                sh "docker compose up -d"
+
+                echo "Iniciando microserviço para testes..."
+                dir('../lms-authnusers') {
+                    sh "docker compose up -d"
+                }
+
+                sh "sleep 15"
+                // O healthcheck deve apontar para a porta do teu gateway ou serviço
+                sh "curl -f http://localhost:8080/health || (echo 'Serviço offline' && exit 1)"
+            }
+        }
+
+        stage('Deploy Service A (Users) - Automatic') {
+            steps {
+                echo "Deploy automático de Users..."
+                dir('../lms-authnusers') {
+                    sh "docker compose up -d"
+                }
+            }
+        }
+
+        stage('Manual Approval Service B (Readers)') {
+            steps {
+                input message: "Aprovar deploy do Service Readers?", ok: "Deploy"
+            }
+        }
+
+        stage('Deploy Service B (Readers)') {
+            steps {
+                dir('../lms-readers') {
+                    sh "docker compose up -d"
+                }
+            }
+        }
+
+        stage('Load Tests & Scaling') {
+            steps {
+                echo "Escalando Users para 3 instâncias..."
+                dir('../lms-authnusers') {
+                    sh "docker compose up -d --scale users=3"
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "A executar Rollback..."
+            dir('../lms-authnusers') { sh "docker compose down && docker compose up -d" }
+        }
+        always {
+            sh "docker image prune -f"
+        }
+    }
+}
