@@ -108,9 +108,5 @@ pipeline {
                             }
                         }
                     }
-                    always {
-                        // O cleanWs deve ser a ÚLTIMA coisa a acontecer
-                        cleanWs()
-                    }
                 }
 }
