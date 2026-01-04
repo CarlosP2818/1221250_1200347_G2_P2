@@ -24,7 +24,7 @@ services:
             interval: 20s        # Verifica a cada 20 segundos
             timeout: 10s         # Espera 10s pela resposta
             retries: 5           # Tenta 5 vezes antes de marcar como "unhealthy"
-            start_period: 60 # Reduzi para o Jenkins não esperar tanto tempo
+            start_period: 60s # Reduzi para o Jenkins não esperar tanto tempo
 
         # --- Requisito "Zero Downtime / Rolling Update" ---
         deploy:
