@@ -130,18 +130,26 @@ pipeline {
     }
 
     post {
-        failure {
-            script {
-                echo "--- Automatically revoke release (Rollback) ---"
-                dir('lms-authnusers') {
-                    // Se algo falhou, o Jenkins tenta reverter para a última imagem estável
-                    sh "docker compose down"
-                    sh "docker compose up -d"
+            failure {
+                script {
+                    echo "--- Requisito: Automatically revoke release (Rollback) ---"
+                    dir('lms-authnusers') {
+                        // Usamos a imagem 'latest' para o rollback, garantindo que o ambiente volta ao estado estável
+                        withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                            echo "A reverter para a última imagem estável: ${env.DOCKER_IMAGE}"
+
+                            // O 'down' limpa o deploy que falhou (contentores unhealthy/meio-abertos)
+                            sh "docker compose down --remove-orphans"
+
+                            // O 'up' repõe a versão anterior
+                            sh "docker compose up -d"
+                        }
+                    }
                 }
             }
+            always {
+                // Limpa o workspace para poupar espaço em disco na VM
+                cleanWs()
+            }
         }
-        always {
-            cleanWs()
-        }
-    }
 }
