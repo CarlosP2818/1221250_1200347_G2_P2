@@ -1,4 +1,4 @@
-# QAS 2 - Student A: Reader and User Creation
+# ADD 2 - Student A: Reader and User Creation
 
 *Attribute-Driven Design (ADD) Full Documentation*
 
@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-This document presents the *Attribute-Driven Design (ADD)* for the *Quality Attribute Scenario (QAS) 5 - "Reader and User Creation"*.
+This document presents the *Attribute-Driven Design (ADD)* for the *Quality Attribute Scenario (QAS) 2 - "Reader and User Creation"*.
 
 The scenario addresses the librarian requirement:
 

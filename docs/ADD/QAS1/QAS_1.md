@@ -1,4 +1,4 @@
-# QAS 1 - LMS Reengineering
+# ADD 1 - LMS Reengineering
 
 *Attribute-Driven Design (ADD) Full Documentation*
 
@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-This document presents the full application of *Attribute-Driven Design (ADD)* for the *Quality Attribute Scenario (QAS) 2 - "LMS Reengineering"*.
+This document presents the full application of *Attribute-Driven Design (ADD)* for the *Quality Attribute Scenario (QAS) 1 - "LMS Reengineering"*.
 
 The scenario outlines the requirements and design considerations for reengineering the LMS application into a **distributed/decentralized architecture**:
 
