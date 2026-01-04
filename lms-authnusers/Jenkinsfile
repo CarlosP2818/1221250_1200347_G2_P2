@@ -24,7 +24,6 @@ pipeline {
         stage('Build & Unit Tests') {
             steps {
                 dir('lms-authnusers') {
-                    // Compila e corre testes unitários
                     sh 'mvn clean test'
                 }
             }

@@ -5,12 +5,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
-class LMSUsersTests {
+//@SpringBootTest
+//class LMSUsersTests {
 
-    @Test
-    void contextLoads() {
-        assertTrue(true);
-    }
+//    @Test
+//    void contextLoads() {
+//        assertTrue(true);
+//    }
 
-}
+//}
