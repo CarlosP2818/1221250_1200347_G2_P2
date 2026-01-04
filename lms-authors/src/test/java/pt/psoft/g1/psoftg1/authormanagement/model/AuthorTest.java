@@ -50,7 +50,7 @@ class AuthorTest {
 
     @Test
     void testCreateAuthorRequestWithPhoto() {
-        CreateAuthorRequest request = new CreateAuthorRequest(validName, validBio, null, "photoTest.jpg");
+        CreateAuthorRequest request = new CreateAuthorRequest(validName, validBio, null, "photoTest.jpg", "");
         Author author = new Author(request.getName(), request.getBio(), "photoTest.jpg");
         assertNotNull(author);
         assertEquals(request.getPhotoURI(), author.getPhoto().getPhotoFile());
@@ -58,7 +58,7 @@ class AuthorTest {
 
     @Test
     void testCreateAuthorRequestWithoutPhoto() {
-        CreateAuthorRequest request = new CreateAuthorRequest(validName, validBio, null, null);
+        CreateAuthorRequest request = new CreateAuthorRequest(validName, validBio, null, null, "");
         Author author = new Author(request.getName(), request.getBio(), null);
         assertNotNull(author);
         assertNull(author.getPhoto());
@@ -85,4 +85,19 @@ class AuthorTest {
         assertNotNull(photo);
         assertEquals("photoTest.jpg", photo.getPhotoFile());
     }
+
+    @Test
+    void removePhoto_withIncorrectVersion_throwsConflict() {
+        Author author = new Author(validName, validBio, "photo.jpg");
+        assertThrows(Exception.class, () -> author.removePhoto(author.getVersion() + 1));
+    }
+
+    @Test
+    void removePhoto_withCorrectVersion_removesPhoto() {
+        Author author = new Author(validName, validBio, "photo.jpg");
+        author.removePhoto(author.getVersion());
+        assertNull(author.getPhoto());
+    }
+
+
 }
