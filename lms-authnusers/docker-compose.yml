@@ -1,7 +1,7 @@
 
 services:
     users:
-        image: lms-authnusers:latest
+        image: cralos062/lms-authnusers:latest
         container_name: users-service
         build:
             context: .

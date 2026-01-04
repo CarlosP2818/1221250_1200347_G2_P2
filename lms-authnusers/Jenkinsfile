@@ -99,29 +99,36 @@ pipeline {
             }
         }
 
-        stage('Deploy with Docker Compose') {
-            steps {
-                dir('lms-authnusers') { // Entra na pasta onde está o docker-compose.yml
-                    script {
-                        echo "A atualizar ambiente com Docker Compose..."
+       stage('Deploy with Docker Compose') {
+           steps {
+               dir('lms-authnusers') {
+                   script {
+                       echo "A atualizar ambiente com Docker Compose..."
 
-                        // 1. Garante que a rede externa existe (evita erro se não existir)
-                        sh "docker network create lms_network || true"
+                       // 1. Garante que a rede externa existe
+                       sh "docker network create lms_network || true"
 
-                        // 2. Faz o Pull da imagem mais recente que acabaste de enviar para o Hub
-                        // (O compose vai usar a imagem do Hub em vez de fazer build local)
-                        sh "docker compose pull users"
+                       // 2. Usar o withRegistry para autenticar o 'docker compose pull'
+                       docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
 
-                        // 3. Sobe os serviços em background (-d) e remove órfãos
-                        sh "docker compose up -d"
+                           // Definimos a variável de ambiente para o Compose usar o nome completo da imagem
+                           // Isto evita que tenhas de mudar o docker-compose.yml constantemente
+                           withEnv(["DOCKER_IMAGE=${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:latest"]) {
 
-                        echo "Serviços iniciados. A verificar estado..."
-                        sh "docker ps | grep users"
-                    }
-                }
-            }
-        }
+                               echo "A fazer pull da imagem: ${env.DOCKER_IMAGE}"
+                               sh "docker compose pull users"
 
+                               echo "A subir os serviços..."
+                               sh "docker compose up -d"
+                           }
+                       }
+
+                       echo "Serviços iniciados. A verificar estado..."
+                       sh "docker ps | grep ${DOCKER_IMAGE_NAME} || true"
+                   }
+               }
+           }
+       }
 
         stage('Smoke Tests (Staging)') {
             when { expression { params.BRANCH == 'staging' } }
