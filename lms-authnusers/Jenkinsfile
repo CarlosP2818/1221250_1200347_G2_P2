@@ -99,6 +99,37 @@ pipeline {
             }
         }
 
+        stage('Deploy to VM (Staging)') {
+            steps {
+                script {
+                    def imageFullName = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
+                    def containerName = "lms-users-app"
+                    def hostPort = "30081"
+                    def containerPort = "8080" // A porta em que o Spring Boot corre dentro do jar
+
+                    echo "A iniciar deploy do contentor ${containerName}..."
+
+                    // 1. Parar e remover o contentor antigo se ele existir
+                    sh "docker rm -f ${containerName} || true"
+
+                    // 2. Limpar imagens antigas (opcional, para poupar espaço na VM)
+                    sh "docker image prune -f"
+
+                    // 3. Correr o novo contentor
+                    // Usamos a tag 'latest' que acabaste de enviar para o Hub
+                    sh """
+                        docker run -d \
+                        --name ${containerName} \
+                        -p ${hostPort}:${containerPort} \
+                        --restart unless-stopped \
+                        ${imageFullName}:latest
+                    """
+
+                    echo "Deploy concluído com sucesso em http://51.13.187.249:${hostPort}"
+                }
+            }
+        }
+
         stage('Smoke Tests (Staging)') {
             when { expression { params.BRANCH == 'staging' } }
             steps {
