@@ -13,46 +13,21 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+        stage('Checkout') { steps { checkout scm } }
 
         stage('Build & Unit Tests') {
-            steps {
-                dir('lms-authnusers') {
-                    sh 'mvn clean test'
-                }
-            }
+            steps { dir('lms-authnusers') { sh 'mvn clean test' } }
         }
 
         stage('Static Analysis & Mutation') {
             parallel {
-                stage('SpotBugs') {
-                    steps {
-                        dir('lms-authnusers') {
-                            sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs'
-                        }
-                    }
-                }
-                stage('Pitest') {
-                    steps {
-                        dir('lms-authnusers') {
-                            sh 'mvn org.pitest:pitest-maven:mutationCoverage'
-                        }
-                    }
-                }
+                stage('SpotBugs') { steps { dir('lms-authnusers') { sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs' } } }
+                stage('Pitest') { steps { dir('lms-authnusers') { sh 'mvn org.pitest:pitest-maven:mutationCoverage' } } }
             }
         }
 
         stage('Package Artifact') {
-            steps {
-                dir('lms-authnusers') {
-                    sh 'mvn package -DskipTests'
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                }
-            }
+            steps { dir('lms-authnusers') { sh 'mvn package -DskipTests'; archiveArtifacts artifacts: 'target/*.jar' } }
         }
 
         stage('Build & Push Docker Image') {
@@ -61,13 +36,10 @@ pipeline {
                     script {
                         def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                         def buildTag = "${env.BUILD_NUMBER}-${shortCommit}"
-
                         def customImage = docker.build("${IMAGE_FULL_NAME}:${buildTag}")
-
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
                             customImage.push("${buildTag}")
                             customImage.push("latest")
-                            if (params.BRANCH != 'main') { customImage.push(params.BRANCH) }
                         }
                     }
                 }
@@ -75,81 +47,62 @@ pipeline {
         }
 
         stage('Deploy & Health Check') {
-                    steps {
-                        dir('lms-authnusers') {
-                            script {
-                                docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
-                                        sh "docker network create lms_network || true"
+            steps {
+                dir('lms-authnusers') {
+                    script {
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                            withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                                sh "docker network create lms_network || true"
 
-                                        echo "--- Requisito: Zero Downtime Rollout ---"
-                                        sh "docker compose pull users"
-                                        // O --remove-orphans garante que contentores antigos não bloqueiam o deploy
-                                        sh "docker compose up -d --remove-orphans"
+                                echo "--- Requisito: Zero Downtime Rollout ---"
+                                sh "docker compose pull users"
+                                sh "docker compose up -d --remove-orphans"
 
-                                        echo "--- Requisito: Health checks in prod ---"
-                                        timeout(time: 5, unit: 'MINUTES') {
-                                            waitUntil {
-                                                // Obtém o ID do contentor que o Compose acabou de subir para o serviço 'users'
-                                                def containerId = sh(script: "docker compose ps -q users", returnStdout: true).trim()
+                                echo "--- Requisito: Health checks in prod ---"
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitUntil {
+                                        // Obtém o ID do contentor mais recente do serviço 'users'
+                                        def containerId = sh(script: "docker compose ps -q users | head -n 1", returnStdout: true).trim()
+                                        if (!containerId) return false
 
-                                                if (!containerId) {
-                                                    echo "A aguardar criação do contentor..."
-                                                    return false
-                                                }
+                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
+                                        echo "Estado do contentor: ${health}"
 
-                                                def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
-                                                echo "Estado do contentor (${containerId}): ${health}"
-
-                                                if (health == "unhealthy") {
-                                                    echo "ERRO: O Docker marcou como unhealthy. Logs:"
-                                                    sh "docker logs ${containerId}"
-                                                    error "Deploy interrompido: Contentor unhealthy"
-                                                }
-                                                return (health == "healthy")
-                                            }
+                                        if (health == "unhealthy") {
+                                            sh "docker logs ${containerId}"
+                                            error "Deploy falhou: Contentor unhealthy"
                                         }
+                                        return (health == "healthy")
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
 
         stage('Smoke Tests') {
-            // Smoke tests in staging/dev
             steps {
                 dir('lms-authnusers') {
-                    sh '''
-                        export AUTH_URL="http://localhost:30081/api/public/login"
-                        k6 run smoke_test.js || (echo "Smoke tests falharam!" && exit 1)
-                    '''
+                    sh 'export AUTH_URL="http://localhost:30081/api/public/login" && k6 run smoke_test.js'
                 }
             }
         }
     }
 
     post {
-            failure {
-                script {
-                    echo "--- Requisito: Automatically revoke release (Rollback) ---"
-                    dir('lms-authnusers') {
-                        // Usamos a imagem 'latest' para o rollback, garantindo que o ambiente volta ao estado estável
-                        withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
-                            echo "A reverter para a última imagem estável: ${env.DOCKER_IMAGE}"
-
-                            // O 'down' limpa o deploy que falhou (contentores unhealthy/meio-abertos)
-                            sh "docker compose down --remove-orphans"
-
-                            // O 'up' repõe a versão anterior
-                            sh "docker compose up -d"
-                        }
+        failure {
+            script {
+                echo "--- Requisito: Automatically revoke release (Rollback) ---"
+                dir('lms-authnusers') {
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                        sh "docker compose down"
+                        sh "docker compose up -d"
                     }
                 }
             }
-            always {
-                // Limpa o workspace para poupar espaço em disco na VM
-                cleanWs()
-            }
         }
+        always { cleanWs() }
+    }
 }
