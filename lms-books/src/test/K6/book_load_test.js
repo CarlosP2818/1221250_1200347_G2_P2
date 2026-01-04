@@ -43,7 +43,7 @@ export default function () {
     check(loginRes, { 'login ok': (r) => r.status === 200 });
 
 // Pega o token do header Authorization
-    let tokenHeader = loginRes.headers['Authorization']; // <- aqui vem "Bearer <token>"
+    let tokenHeader = loginRes.headers['Authorization'];
     if (!tokenHeader) {
         throw new Error('Token não encontrado no header Authorization');
     }
@@ -63,13 +63,13 @@ export default function () {
     book.isbn = generateIsbn13();
 
 // Exemplo de uso
-    let resCreate = http.post(
+    let resCreate = http.put(
         'http://localhost:8087/api/books',
         JSON.stringify(book),
         params
     );
 
-    check(resCreate, { 'book created': (r) => r.status === 201 || r.status === 409 });
+    check(resCreate, { 'book created': (r) => r.status === 202 || r.status === 409 });
 
 
     let resGet = http.get(

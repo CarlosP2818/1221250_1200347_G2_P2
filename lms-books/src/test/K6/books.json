@@ -1,19 +1,35 @@
 [
   {
-    "title": "Aprendendo Microserviços",
-    "description": "Livro sobre arquitetura de microserviços em Java",
-    "genreId": "12345",
-    "photoURI": null,
+    "title": "Aprendendo Arquitetura de Software",
+    "genreId": "123e4567-e89b-12d3-a456-426614174000",
+    "description": "Um livro completo sobre padrões e boas práticas de arquitetura.",
     "authors": [
       {
-        "name": "João Silva",
-        "bio": "Bio1"
+        "id": "",
+        "name": "Maria Oliveira",
+        "bio": "Especialista em arquitetura de software e design de sistemas."
       },
       {
-        "name": "Maria Oliveira",
-        "bio": "Bio2"
+        "id": "",
+        "name": "João Silva",
+        "bio": "Engenheiro de software com 10 anos de experiência."
       }
     ],
-    "correlationId": ""
+    "photoURI": null,
+    "correlationId": "abc123"
+  },
+  {
+    "title": "Introdução ao Spring Boot",
+    "genreId": "123e4567-e89b-12d3-a456-426614174001",
+    "description": "Guia prático para começar a desenvolver com Spring Boot.",
+    "authors": [
+      {
+        "id": "",
+        "name": "Carlos Pereira",
+        "bio": "Desenvolvedor fullstack e instrutor de Java."
+      }
+    ],
+    "photoURI": null,
+    "correlationId": "def456"
   }
 ]
