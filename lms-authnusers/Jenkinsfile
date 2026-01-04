@@ -108,7 +108,7 @@ pipeline {
             steps {
                 dir('lms-authnusers') {
                     sh '''
-                        export AUTH_URL="http://localhost:30081/api/public/login"
+                        export AUTH_URL="http://localhost:8080/api/public/login"
                         k6 run smoke_test.js || (echo "Smoke tests falharam!" && exit 1)
                     '''
                 }

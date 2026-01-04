@@ -4,7 +4,7 @@ services:
         image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
         container_name: users-service
         ports:
-            - "30081:8080" # Porta externa 30081 conforme planeado
+            - "8080:8080" # Porta externa 30081 conforme planeado
         depends_on:
             postgres_users:
                 condition: service_healthy
