@@ -1,0 +1,108 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch a construir')
+    }
+
+    environment {
+        // Docker Registry Configuration
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials' // ID das tuas credenciais no Jenkins
+        DOCKER_IMAGE_NAME = 'lms-authnusers'
+        DOCKER_NAMESPACE = 'cralos062' // O teu username do Docker Hub
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout da branch específica passada pelo orquestrador
+                checkout scm
+            }
+        }
+
+        stage('Build & Unit Tests') {
+            steps {
+                dir('lms-authnusers') {
+                    // Compila e corre testes unitários
+                    sh 'mvn clean test'
+                }
+            }
+        }
+
+        stage('Static Analysis & Mutation') {
+            parallel {
+                stage('SpotBugs') {
+                    steps {
+                        dir('lms-authnusers') {
+                            sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs'
+                        }
+                    }
+                }
+                stage('Pitest') {
+                    steps {
+                        dir('lms-authnusers') {
+                            // Mutation testing pode ser demorado, opcional em cada build
+                            sh 'mvn org.pitest:pitest-maven:mutationCoverage'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Package Artifact') {
+            steps {
+                dir('lms-authnusers') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                dir('lms-authnusers') {
+                    script {
+                        // Gerar tag baseada no build e commit
+                        def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                        def buildTag = "${env.BUILD_NUMBER}-${shortCommit}"
+                        def imageFullName = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
+
+                        // Build da imagem
+                        def customImage = docker.build("${imageFullName}:${buildTag}")
+
+                        // Push para o Docker Hub
+                        docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_REGISTRY_CREDENTIALS) {
+                            customImage.push()
+                            customImage.push(params.BRANCH) // Tag com o nome da branch (ex: dev, main)
+                            customImage.push("latest")
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Smoke Tests (Staging)') {
+            when { expression { params.BRANCH == 'staging' } }
+            steps {
+                dir('lms-authnusers') {
+                    // Ajustado de PowerShell para Shell Linux
+                    sh '''
+                        export AUTH_URL="http://51.13.187.249:30081/api/public/login"
+                        k6 run smoke_test.js
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Limpa o workspace para não encher o disco do container
+            cleanWs()
+        }
+        failure {
+            echo "O build do serviço ${DOCKER_IMAGE_NAME} falhou!"
+        }
+    }
+}
