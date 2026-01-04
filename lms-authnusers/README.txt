@@ -9,7 +9,7 @@ DockerfileWithPackaging (inclui mvn package)
 > docker build -f DockerfileWithPackaging -t lmsusers .
 
 Running:
-> docker compose -f docker-compose-rabbitmq+postgres.yml up -d
+> docker compoe -f docker-compose-rabbitmq+postgres.yml up -d
 > docker exec -it postgres_in_lms_network psql -U postgres
     psql (16.3 (Debian 16.3-1.pgdg120+1))
     Type "help" for help.

@@ -1,47 +1,37 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_CREDS = 'docker-hub-credentials'
-        DOCKER_REGISTRY = "carlosp2818"
-        APP_USERS = "lms-authnusers"
-    }
-
     stages {
-        stage('Build & Push with Plugin') {
+        stage('Detect Changes & Trigger Builds') {
             steps {
                 script {
-                    // Como não é multibranch, definimos a tag manualmente ou usamos 'main'
-                    def tag = "main-${env.BUILD_ID}"
-                    echo "Building Image with tag: ${tag}"
+                    // 1. Obter a lista de pastas alteradas no último commit
+                    def changedFiles = sh(script: "git diff --name-only HEAD~1 HEAD", returnStdout: true).trim().split('\n')
 
-                    // O contexto do build (../users) é essencial para o Docker encontrar o código
-                    def userImage = docker.build("${DOCKER_REGISTRY}/${APP_USERS}:${tag}", "-f ../lms-authnusers/Dockerfile ../lms-authnusers")
+                    // Definir os teus serviços e os nomes dos respetivos Jobs no Jenkins
+                    def services = [
+                        'lms-authnusers': 'usersnauth',
+                        'lms-readers': 'odsoft-p2-readers',
+                        'lms-books': 'odsoft-p2-books',
+                        'lms-authors': 'odsoft-p2-authors'
+                    ]
 
-                    // Push para o Docker Hub
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDS) {
-                        userImage.push()
-                        userImage.push('latest')
+                    def triggered = false
+
+                    // 2. Verificar cada pasta e disparar o build correspondente
+                    services.each { folder, jobName ->
+                        if (changedFiles.any { it.startsWith(folder + "/") }) {
+                            echo "Alteração detetada em: ${folder}. A disparar ${jobName}..."
+                            build job: jobName, wait: false, parameters: [string(name: 'BRANCH', value: env.BRANCH_NAME ?: 'main')]
+                            triggered = true
+                        }
+                    }
+
+                    if (!triggered) {
+                        echo "Nenhuma alteração detetada nas pastas dos microserviços."
                     }
                 }
             }
-        }
-
-        stage('Deploy with Compose') {
-            steps {
-                echo "Iniciando Deploy..."
-                // Ajustado para o nome da pasta que mencionaste no log anterior
-                dir('../lms-authnusers') {
-                    sh "docker compose up -d"
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            echo "Limpando imagens antigas..."
-            sh "docker image prune -f"
         }
     }
 }
