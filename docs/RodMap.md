@@ -290,3 +290,89 @@
 | Response Measures | Test success/failure reports; contracts verified; performance metrics recorded; regressions prevented |
 
 - **QAS Detailed:** [ADD #17 – Testability](QAS17/QAS_17.md)
+
+# Adoption of Microservices Patterns
+
+This section documents the **explicit adoption and justification** of microservices patterns in the LMS reengineering project. Each pattern is linked to **observed requirements, quality attributes, and design decisions**.
+
+---
+
+## 1. Strangler Fig
+
+**Usage:** Gradual replacement of the monolithic LMS with microservices.  
+**Justification:**
+- Allows **incremental migration** without system downtime.
+- Critical to **minimize risk** while modernizing legacy services.
+- Supports **service-by-service extraction** for Books, Authors, Genres, Readers, and Users.
+
+---
+
+## 2. Events & Messaging
+
+**Usage:** Event-driven communication using **RabbitMQ** for asynchronous integration.  
+**Justification:**
+- Decouples services for **independent evolution**.
+- Enables **reactive workflows** and reliable inter-service notifications (e.g., when a book is added).
+- Improves **scalability and resilience**, avoiding synchronous bottlenecks.
+
+---
+
+## 3. CQRS (Command Query Responsibility Segregation)
+
+**Usage:** Separate models for **commands (writes)** and **queries (reads)**.  
+**Justification:**
+- Optimizes **read-heavy LMS operations** like listing books or genres.
+- Allows **different scaling strategies** for write vs read workloads.
+- Supports **eventual consistency** in distributed systems.
+
+---
+
+## 4. Database-per-Service
+
+**Usage:** Each microservice owns its own database according docker to its domain.
+
+**Justification:**
+- Ensures **service autonomy** and **data encapsulation**.
+- Prevents **cross-service locking** and tight coupling.
+- Enables **independent scaling and backup strategies**.
+
+---
+
+## 5. Polyglot Persistence
+
+**Usage:** Choice of database technology based on service needs.  
+**Justification:**
+- Books, Authors, and Genres → **Relational (PostgreSQL)** for structured data.
+- Events, Logs → **NoSQL (MongoDB)** for high write throughput.
+- Improves **performance and efficiency** by using the best storage type per service.
+
+---
+
+## 6. Outbox Pattern
+
+**Usage:** Persist events within the **transactional boundary** of service updates.  
+**Justification:**
+- Ensures **reliable event publication** even if messaging broker fails.
+- Prevents **lost or duplicate messages**, guaranteeing consistency between services.
+
+---
+
+## 7. Saga Pattern
+
+**Usage:** Implement **long-running, distributed transactions** via choreography.  
+**Justification:**
+- Manages **multi-service workflows** (e.g., user registration triggers profile creation and subscription setup).
+- Maintains **eventual consistency** without global transactions.
+- Supports **compensation logic** to rollback actions in case of failure.
+
+---
+
+### Summary
+
+The LMS microservices architecture explicitly adopts **modern microservices patterns** to address:
+
+- **Scalability & Performance:** Event-driven messaging, CQRS, database-per-service.
+- **Resilience & Fault Tolerance:** Saga, Outbox, message broker.
+- **Maintainability & Extensibility:** Strangler Fig, polyglot persistence, service autonomy.
+
+These patterns are **not applied arbitrarily**; each is chosen to meet **specific system requirements and quality attributes**, ensuring a robust, scalable, and maintainable LMS microservices ecosystem.
