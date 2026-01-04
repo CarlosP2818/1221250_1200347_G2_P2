@@ -25,7 +25,7 @@ public class BookReplyListener {
         pendingBooks.put(correlationId, request);
     }
 
-    @RabbitListener(queues = "book.reply.queue")
+    @RabbitListener(queues = "author.reply.queue")
     public void handleAuthorReply(AuthorFoundReply reply) {
         System.out.println("BOOKS: Recebi resposta do Author! ID: " + reply.authors());
         String correlationId = reply.correlationId();
