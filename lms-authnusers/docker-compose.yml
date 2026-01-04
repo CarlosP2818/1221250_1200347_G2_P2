@@ -19,12 +19,12 @@ services:
 
         # --- Requisito "Health checks in prod" ---
         healthcheck:
-            # Tenta abrir uma ligação TCP na porta 8080. Se abrir, está vivo.
-            test: [ "CMD-SHELL", "timeout 1s bash -c ':> /dev/tcp/127.0.0.1/8080' || exit 1" ]
-            interval: 10s # Baixei para ser mais rápido
-            timeout: 5s
-            retries: 3
-            start_period: 15s # Reduzi para o Jenkins não esperar tanto tempo
+            # O Docker entra no container e tenta aceder ao endpoint interno
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+            interval: 20s        # Verifica a cada 20 segundos
+            timeout: 10s         # Espera 10s pela resposta
+            retries: 5           # Tenta 5 vezes antes de marcar como "unhealthy"
+            start_period: 60 # Reduzi para o Jenkins não esperar tanto tempo
 
         # --- Requisito "Zero Downtime / Rolling Update" ---
         deploy:
