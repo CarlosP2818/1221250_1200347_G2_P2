@@ -110,7 +110,7 @@ pipeline {
 
                         // 2. Faz o Pull da imagem mais recente que acabaste de enviar para o Hub
                         // (O compose vai usar a imagem do Hub em vez de fazer build local)
-                        sh "docker-compose pull users"
+                        sh "docker compose pull users"
 
                         // 3. Sobe os serviços em background (-d) e remove órfãos
                         sh "docker compose up -d"
