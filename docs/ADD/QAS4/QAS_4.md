@@ -9,7 +9,6 @@
 This document presents the full application of *Attribute-Driven Design (ADD)* for the *Quality Attribute Scenario (QAS 4 - "Availability")*.
 
 The scenario outlines the requirements and design considerations for ensuring **high availability** in the LMS application:
-
 - **Objective:** Ensure the system remains available despite service failures or infrastructure faults.
 - **Functionalities:** All LMS operations (create book, author, reader, user, etc.) must remain accessible during failures.
 - **Extensibility:** Support scaling and failover for future services.
