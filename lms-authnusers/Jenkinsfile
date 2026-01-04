@@ -95,20 +95,22 @@ pipeline {
             }
 
             post {
-                failure {
-                    script {
-                        echo "--- Requisito: Automatically revoke release (Rollback) ---"
-                        dir('lms-authnusers') {
-                            // Redefinimos a variável no post para o compose não falhar
-                            withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
-                                sh "docker compose down"
-                                sh "docker compose up -d"
+                    failure {
+                        script {
+                            echo "--- Requisito: Automatically revoke release (Rollback) ---"
+                            // IMPORTANTE: O rollback tem de acontecer ANTES do cleanWs
+                            dir('lms-authnusers') {
+                                withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                                    // Forçamos o uso do ficheiro local
+                                    sh "docker compose -f docker-compose.yml down"
+                                    sh "docker compose -f docker-compose.yml up -d"
+                                }
                             }
                         }
                     }
+                    always {
+                        // O cleanWs deve ser a ÚLTIMA coisa a acontecer
+                        cleanWs()
+                    }
                 }
-                always {
-                    cleanWs()
-                }
-            }
 }
