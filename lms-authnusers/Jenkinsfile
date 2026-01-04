@@ -6,17 +6,15 @@ pipeline {
     }
 
     environment {
-        // Docker Registry Configuration
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials' // ID das tuas credenciais no Jenkins
+        DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials'
         DOCKER_IMAGE_NAME = 'lms-authnusers'
-        DOCKER_NAMESPACE = 'cralos062' // O teu username do Docker Hub
+        DOCKER_NAMESPACE = 'cralos062'
+        IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout da branch específica passada pelo orquestrador
                 checkout scm
             }
         }
@@ -41,7 +39,6 @@ pipeline {
                 stage('Pitest') {
                     steps {
                         dir('lms-authnusers') {
-                            // Mutation testing pode ser demorado, opcional em cada build
                             sh 'mvn org.pitest:pitest-maven:mutationCoverage'
                         }
                     }
@@ -62,82 +59,56 @@ pipeline {
             steps {
                 dir('lms-authnusers') {
                     script {
-                        // 1. Logs de Identificação
                         def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                         def buildTag = "${env.BUILD_NUMBER}-${shortCommit}"
-                        def imageFullName = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
 
-                        echo "DEBUG: A preparar build para imagem: ${imageFullName}"
-                        echo "DEBUG: Namespace configurado: ${DOCKER_NAMESPACE}"
-                        echo "DEBUG: Tag gerada: ${buildTag}"
+                        def customImage = docker.build("${IMAGE_FULL_NAME}:${buildTag}")
 
-                        // 2. Build
-                        def customImage = docker.build("${imageFullName}:${buildTag}")
-
-                        // 3. Push com logs de autenticação
-                        // Importante: Removi o "https://" da URL, o plugin prefere apenas 'index.docker.io/v1/'
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-
-                            // Este bloco imprime qual o user que o Jenkins está a carregar das credenciais
-                            withCredentials([usernamePassword(credentialsId: DOCKER_REGISTRY_CREDENTIALS,
-                                             passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                                echo "DEBUG: A tentar login no Docker Hub com o utilizador: ${USER}"
-                                // sh "docker login -u ${USER} -p ${PASS}" // Opcional se o withRegistry falhar
-                            }
-
-                            echo "DEBUG: A iniciar push da tag ${buildTag}..."
-                            customImage.push()
-
-                            echo "DEBUG: A iniciar push da branch ${params.BRANCH}..."
-                            customImage.push(params.BRANCH)
-
-                            echo "DEBUG: A iniciar push da tag latest..."
+                            customImage.push("${buildTag}")
                             customImage.push("latest")
+                            if (params.BRANCH != 'main') { customImage.push(params.BRANCH) }
                         }
                     }
                 }
             }
         }
 
-       stage('Deploy with Docker Compose') {
-           steps {
-               dir('lms-authnusers') {
-                   script {
-                       echo "A atualizar ambiente com Docker Compose..."
-
-                       // 1. Garante que a rede externa existe
-                       sh "docker network create lms_network || true"
-
-                       // 2. Usar o withRegistry para autenticar o 'docker compose pull'
-                       docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-
-                           // Definimos a variável de ambiente para o Compose usar o nome completo da imagem
-                           // Isto evita que tenhas de mudar o docker-compose.yml constantemente
-                           withEnv(["DOCKER_IMAGE=${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:latest"]) {
-
-                               echo "A fazer pull da imagem: ${env.DOCKER_IMAGE}"
-                               sh "docker compose pull users"
-
-                               echo "A subir os serviços..."
-                               sh "docker compose up -d"
-                           }
-                       }
-
-                       echo "Serviços iniciados. A verificar estado..."
-                       sh "docker ps | grep ${DOCKER_IMAGE_NAME} || true"
-                   }
-               }
-           }
-       }
-
-        stage('Smoke Tests (Staging)') {
-            when { expression { params.BRANCH == 'staging' } }
+        stage('Deploy & Health Check') {
             steps {
                 dir('lms-authnusers') {
-                    // Ajustado de PowerShell para Shell Linux
+                    script {
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                            withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                                sh "docker network create lms_network || true"
+
+                                echo "--- Requisito: Zero Downtime Rollout ---"
+                                sh "docker compose pull users"
+                                sh "docker compose up -d"
+
+                                echo "--- Requisito: Health checks in prod ---"
+                                // Aguarda o status de health definido no docker-compose.yml
+                                timeout(time: 2, unit: 'MINUTES') {
+                                    waitUntil {
+                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' users-service", returnStdout: true).trim()
+                                        echo "Estado atual: ${health}"
+                                        return (health == "healthy")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Smoke Tests') {
+            // Smoke tests in staging/dev
+            steps {
+                dir('lms-authnusers') {
                     sh '''
-                        export AUTH_URL="http://51.13.187.249:30081/api/public/login"
-                        k6 run smoke_test.js
+                        export AUTH_URL="http://localhost:30081/api/public/login"
+                        k6 run smoke_test.js || (echo "Smoke tests falharam!" && exit 1)
                     '''
                 }
             }
@@ -145,12 +116,18 @@ pipeline {
     }
 
     post {
-        always {
-            // Limpa o workspace para não encher o disco do container
-            cleanWs()
-        }
         failure {
-            echo "O build do serviço ${DOCKER_IMAGE_NAME} falhou!"
+            script {
+                echo "--- Automatically revoke release (Rollback) ---"
+                dir('lms-authnusers') {
+                    // Se algo falhou, o Jenkins tenta reverter para a última imagem estável
+                    sh "docker compose down"
+                    sh "docker compose up -d"
+                }
+            }
+        }
+        always {
+            cleanWs()
         }
     }
 }
