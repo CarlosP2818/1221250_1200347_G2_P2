@@ -91,7 +91,7 @@ pipeline {
                                                                         if (health == "unhealthy") {
                                                                             echo "LOGS DE ERRO DA APP:"
                                                                             sh "docker logs users-service --tail 20"
-                                                                            return true // Sai do loop para falhar no post
+                                                                            return true //
                                                                         }
                                                                         return (health == "healthy")
                                                                     }
