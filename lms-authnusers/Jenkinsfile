@@ -10,7 +10,6 @@ pipeline {
         DOCKER_IMAGE_NAME = 'lms-authnusers'
         DOCKER_NAMESPACE = 'cralos062'
         IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
-        BUILD_TAG = "" // Será preenchido dinamicamente
     }
 
     stages {
@@ -56,24 +55,24 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image (Pre-Release)') {
-            steps {
-                dir('lms-authnusers') {
-                    script {
-                        def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+       stage('Build & Push Docker Image') {
+           steps {
+               dir('lms-authnusers') {
+                   script {
+                       def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                       // CORREÇÃO: Atribuir à variável do ambiente SEM o 'def'
+                       env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
 
-                        // Build da imagem com a tag única do build
-                        def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+                       echo "A gerar imagem com a tag: ${env.BUILD_TAG}"
 
-                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                            // Push apenas da tag única. O 'latest' ainda não é tocado!
-                            customImage.push("${env.BUILD_TAG}")
-                        }
-                    }
-                }
-            }
-        }
+                       def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+                       docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                           customImage.push("${env.BUILD_TAG}")
+                       }
+                   }
+               }
+           }
+       }
 
         stage('Deploy & Health Check') {
             steps {
