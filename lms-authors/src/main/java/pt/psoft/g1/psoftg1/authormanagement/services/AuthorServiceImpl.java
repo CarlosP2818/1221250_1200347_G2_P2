@@ -1,15 +1,13 @@
 package pt.psoft.g1.psoftg1.authormanagement.services;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.authormanagement.api.BookShortView;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
+import pt.psoft.g1.psoftg1.authormanagement.repositories.OutboxEventRepository;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 
@@ -25,14 +23,7 @@ public class AuthorServiceImpl implements AuthorService {
     private final PhotoRepository photoRepository;
     private final RabbitMQPublisher rabbitMQPublisher;
 
-    @Autowired
-    private RabbitTemplate template;
-
-    @Autowired
-    private DirectExchange direct;
-
-    @Autowired
-    private TempAuthorRepository tempAuthorRepository;
+    private final OutboxEventRepository tempAuthorRepository;
 
     @Override
     public Iterable<Author> findAll() {

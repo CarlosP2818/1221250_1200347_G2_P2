@@ -1,30 +1,23 @@
 package pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo;
 
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
+import org.springframework.data.annotation.Id; // Import correto do Spring Data
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.UUID;
 
-@Entity
-@Table(name = "author_temp")
+@Document(collection = "author_temp")
+@Getter
+@Setter
 public class OutboxEventMongo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Getter
-    private Long id;
+    private String id;
 
-    @Getter
-    @Setter
     private String name;
-
-    @Getter @Setter
     private String bio;
-
-    @Getter @Setter
     private UUID sagaId;
-
-    @Getter @Setter
     private boolean processed = false;
+
+    public OutboxEventMongo() {}
 }

@@ -108,6 +108,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/authors/{authorNumber}/coauthors").hasRole(Role.READER)
                 // end authors
                 // books
+                .requestMatchers(HttpMethod.PUT, "/api/books").permitAll()  // torna público o PUT de livros
                 .requestMatchers(HttpMethod.PUT, "/api/books/{isbn}").hasRole(Role.LIBRARIAN)
                 .requestMatchers(HttpMethod.PATCH, "/api/books/{isbn}").hasRole(Role.LIBRARIAN)
                 //.requestMatchers(HttpMethod.GET, "/api/books/{isbn}/avgDuration").hasRole(Role.LIBRARIAN)

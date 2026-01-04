@@ -1,8 +1,6 @@
 package pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq;
 
-import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.CreateBookEvent;
@@ -11,29 +9,23 @@ import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.CreateBookEve
 public class Publisher {
 
     private final RabbitTemplate rabbitTemplate;
-    private final DirectExchange bookExchange;
 
-    // Ajustado o Qualifier para o seu contexto de Books
-    public Publisher(RabbitTemplate rabbitTemplate, @Qualifier("bookExchange") DirectExchange bookExchange) {
+    public Publisher(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
-        this.bookExchange = bookExchange;
     }
 
     public void sendCreateAuthorEvent(CreateBookRequest request, String correlationId) {
-        // Importante: O evento deve levar o correlationId
         CreateBookEvent event = new CreateBookEvent();
         event.setCorrelationId(correlationId);
-        event.setAuthorsId(request.getAuthorsIds());
-        event.setDescription(request.getDescription());
-        event.setGenreId(request.getGenreId());
-        event.setTitle(request.getTitle());
+        event.setAuthors(request.getAuthors());
 
-        // Envia para a rota de autores
         rabbitTemplate.convertAndSend(
-                bookExchange.getName(),
-                "author.create",
+                "author.events.exchange", // O nome da Exchange de autores
+                "author.created",         // A Routing Key exata que está no Config
                 event
         );
+        System.out.println("Authors" + event.getAuthors());
+        System.out.println("BOOKS-PUBLISHER: Evento enviado para Author Service!");
     }
 
     public void sendCreateGenreEvent(CreateBookRequest request, String correlationId) {
@@ -42,7 +34,7 @@ public class Publisher {
 
         // Envia para a rota de géneros
         rabbitTemplate.convertAndSend(
-                bookExchange.getName(),
+                "genre.events.exchange",
                 "genre.create",
                 event
         );

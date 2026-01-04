@@ -35,7 +35,7 @@ public class CreateBookRequest {
     private String photoURI;
 
     @NotNull
-    private List<String> authorsIds;
+    private List<AuthorInnerRequest> authors;
 
     @Getter
     @Setter

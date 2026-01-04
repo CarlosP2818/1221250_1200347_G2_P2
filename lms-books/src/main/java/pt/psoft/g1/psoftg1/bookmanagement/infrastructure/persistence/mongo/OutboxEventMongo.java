@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class OutboxEventMongo {
 
     @Id
-    private Long id;
+    private String id;
 
     private String aggregateType;
 
@@ -30,4 +30,6 @@ public class OutboxEventMongo {
     private boolean processed = false;
 
     private LocalDateTime createdAt;
+
+    private String payload;
 }

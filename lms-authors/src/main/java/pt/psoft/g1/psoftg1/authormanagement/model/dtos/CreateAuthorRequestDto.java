@@ -1,16 +1,18 @@
-package pt.psoft.g1.psoftg1.authormanagement.services;
+package pt.psoft.g1.psoftg1.authormanagement.model.dtos;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Size;
-import lombok.*;
-import org.springframework.web.multipart.MultipartFile;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "A DTO for creating a Author")
-public class CreateAuthorRequest {
+@Schema(description = "DTO for creating an Author")
+public class CreateAuthorRequestDto {
+
     @Size(min = 1, max = 150)
     private String name;
 
@@ -18,16 +20,7 @@ public class CreateAuthorRequest {
     private String bio;
 
     @Nullable
-    @Getter
-    @Setter
-    private MultipartFile photo;
-
-    @Nullable
-    @Getter
-    @Setter
     private String photoURI;
 
-    @Getter
-    @Setter
     private String correlationId;
 }

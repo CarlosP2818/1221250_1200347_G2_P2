@@ -2,6 +2,7 @@ package pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
@@ -15,60 +16,65 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class BookReplyListener {
 
-    // Map para guardar pedidos pendentes de criação de Book
-    private final Map<String, CreateBookRequest> pendingCreateBook = new ConcurrentHashMap<>();
-
+    // Cache em memória para guardar o progresso da Saga
+    private final Map<String, CreateBookRequest> pendingBooks = new ConcurrentHashMap<>();
     private final BookService bookService;
+    private final RabbitTemplate rabbitTemplate; // Injeta isto no construtor
 
-    /**
-     * Registra um novo pedido de criação de Book, com um correlationId único.
-     */
     public void registerCreateBook(String correlationId, CreateBookRequest request) {
-        pendingCreateBook.put(correlationId, request);
+        pendingBooks.put(correlationId, request);
     }
 
-    /**
-     * Listener para replies de Author (confirmação que o Author foi criado)
-     */
-    @RabbitListener(queues = "author.reply.queue")
+    @RabbitListener(queues = "book.reply.queue")
     public void handleAuthorReply(AuthorFoundReply reply) {
-        CreateBookRequest request = pendingCreateBook.get(reply.correlationId());
+        System.out.println("BOOKS: Recebi resposta do Author! ID: " + reply.authors());
+        String correlationId = reply.correlationId();
+        CreateBookRequest request = pendingBooks.get(correlationId);
 
-        if (request == null) {
-            System.err.println("Reply de Author sem pedido pendente: " + reply.correlationId());
-            return;
+        if (request != null) {
+            // Atualiza o pedido com o ID técnico que veio do microserviço de Autores
+            request.setAuthors(reply.authors());
+            tryCreateBookIfReady(request, correlationId);
+        } else {
+            System.err.println("BOOKS: Erro - Pedido não encontrado para ID: " + correlationId);
         }
-
-        request.setAuthorsIds(reply.authorId()); // Marca Author como criado
-
-        tryCreateBookIfReady(request, reply.correlationId());
     }
 
-    /**
-     * Listener para replies de Genre (confirmação que o Genre foi criado)
-     */
     @RabbitListener(queues = "genre.reply.queue")
     public void handleGenreReply(GenreFoundReply reply) {
-        CreateBookRequest request = pendingCreateBook.get(reply.correlationId());
+        System.out.println("BOOKS: Recebi resposta do Genre! ID: " + reply.genreId());
+        String correlationId = reply.correlationId();
+        CreateBookRequest request = pendingBooks.get(correlationId);
 
-        if (request == null) {
-            System.err.println("Reply de Genre sem pedido pendente: " + reply.correlationId());
-            return;
+        if (request != null) {
+            // Atualiza o pedido com o ID técnico que veio do microserviço de Géneros
+            request.setGenreId(reply.genreId());
+            tryCreateBookIfReady(request, correlationId);
+        } else {
+            System.err.println("BOOKS: Erro - Pedido não encontrado para ID: " + correlationId);
         }
-
-        request.setGenreId(reply.genreId());
-
-        tryCreateBookIfReady(request, reply.correlationId());
     }
 
-    /**
-     * Verifica se todos os dependencies (Author + Genre) estão prontos e cria o Book
-     */
     private void tryCreateBookIfReady(CreateBookRequest request, String correlationId) {
-        if (request.getAuthorsIds() != null && request.getGenreId() != null) {
+        boolean hasAuthors = request.getAuthors() != null && !request.getAuthors().isEmpty();
+        boolean hasGenre = request.getGenreId() != null;
+
+        if (hasAuthors && hasGenre) {
             bookService.create(request);
-            pendingCreateBook.remove(correlationId);
-            System.out.println("Book criado com sucesso: " + request.getTitle());
+
+            // --- ADICIONA ISTO PARA O NÍVEL 3 ---
+            // Enviamos uma resposta para a exchange de replies que o Author está a ouvir
+            AuthorFoundReply finalReply = new AuthorFoundReply(correlationId, request.getAuthors());
+
+            rabbitTemplate.convertAndSend(
+                    "book.replies.exchange",
+                    "author.reply",
+                    finalReply
+            );
+            // ------------------------------------
+
+            pendingBooks.remove(correlationId);
+            System.out.println("BOOKS: SUCESSO! Transação finalizada e resposta enviada ao Author.");
         }
     }
 }

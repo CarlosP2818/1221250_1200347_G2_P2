@@ -5,7 +5,7 @@ services:
         build:
             context: .
         ports:
-            - "8087:8080"
+            - "8087:8087"
         depends_on:
             - mongo_books
         environment:
@@ -32,7 +32,7 @@ services:
             MONGO_INITDB_ROOT_PASSWORD: 48aed78edc140a47a9f5d53a
             MONGO_INITDB_DATABASE: books_1
         volumes:
-            - mongo_data:/data/db
+            - mongo_books_data:/data/db
         networks:
             - lms_network
 
@@ -41,5 +41,5 @@ networks:
         external: true
 
 volumes:
-    mongo_data:
+    mongo_books_data:
     uploaded_files_volume_1:

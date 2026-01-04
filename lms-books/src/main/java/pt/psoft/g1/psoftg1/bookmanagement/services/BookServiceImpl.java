@@ -52,26 +52,20 @@ public class BookServiceImpl implements BookService {
             throw new ConflictException("Book with ISBN " + isbn + " already exists");
         }
 
+        List<String> authorsNames = request.getAuthors().stream()
+                .map(AuthorInnerRequest::getName)
+                .toList();
+
         Book newBook = new Book(
                 new Isbn(isbn),
                 new Title(request.getTitle()),
                 new Description(request.getDescription()),
                 request.getGenreId(),
-                request.getAuthorsIds(),
+                authorsNames,
                 request.getPhotoURI()
         );
 
         bookRepository.save(newBook);
-
-        OutboxEventMongo event = new OutboxEventMongo();
-        event.setAggregateType("Book");
-        event.setAggregateId(bookMongoMapper.toMongo(newBook).getIsbn());
-        event.setType("BOOK_CREATED");
-        event.setCorrelationId(request.getCorrelationId());
-        event.setCreatedAt(LocalDateTime.now());
-        event.setProcessed(false);
-
-        outboxRepository.save(event);
 
         return newBook;
     }
@@ -118,7 +112,22 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public OutboxEventMongo createTemp(CreateBookRequest request, String photoURI, String correlationId) {
-        return null;
+        // 1. Criar o evento para o MongoDB
+        OutboxEventMongo event = new OutboxEventMongo();
+        event.setType("BOOK_CREATION_REQUESTED");
+        event.setAggregateType("Book");
+        // Como ainda não temos o ISBN definitivo ou o ID do SQL, usamos o correlationId ou o título
+        event.setAggregateId(request.getTitle());
+        event.setCorrelationId(correlationId);
+        event.setCreatedAt(LocalDateTime.now());
+        event.setProcessed(false);
+
+        // 2. O Payload é o mais importante: guardamos o request (que tem nomes e bios)
+        // Usamos o toString() como já fizeste no create(), mas idealmente seria JSON
+        event.setPayload(request.toString());
+
+        // 3. Salvar no MongoDB. AQUI a coleção "outbox_events" será criada!
+        return outboxRepository.save(event);
     }
 
     @Override
@@ -191,20 +200,6 @@ public class BookServiceImpl implements BookService {
     @Cacheable(value = "booksByAuthor", key = "#authorName")
     public List<Book> findByAuthorsIds(List<String> authorsIds) {
         return bookRepository.findByAuthorIds(authorsIds);
-    }
-
-    @Override
-    @Transactional
-    public Book create(BookViewAMQP bookViewAMQP) {
-        // Converte o AMQP DTO para o CreateBookRequest
-            CreateBookRequest request = new CreateBookRequest();
-
-            request.setTitle(bookViewAMQP.getTitle());
-            request.setGenreId(bookViewAMQP.getGenre());
-            request.setAuthorsIds(bookViewAMQP.getAuthorIds());
-            request.setDescription(bookViewAMQP.getDescription());
-
-        return this.create(request);
     }
 
     @Override

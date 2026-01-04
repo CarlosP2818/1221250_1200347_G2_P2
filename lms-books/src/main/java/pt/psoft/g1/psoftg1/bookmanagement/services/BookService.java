@@ -14,8 +14,6 @@ public interface BookService {
 
     Book create(CreateBookRequest request); // REST request
 
-    Book create(BookViewAMQP bookViewAMQP); // AMQP request
-
     Book findByIsbn(String isbn);
 
     Book update(UpdateBookRequest request, Long currentVersion);

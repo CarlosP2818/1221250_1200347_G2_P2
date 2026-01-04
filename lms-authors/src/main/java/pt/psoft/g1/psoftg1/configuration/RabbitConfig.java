@@ -4,6 +4,7 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,12 +13,12 @@ public class RabbitConfig {
 
     @Bean
     public DirectExchange authorExchange() {
-        return new DirectExchange("LMS.authors");
+        return new DirectExchange("author.events.exchange");
     }
 
     @Bean
     public DirectExchange bookRepliesExchange() {
-        return new DirectExchange("LMS.books.replies");
+        return new DirectExchange("book.replies.exchange");
     }
 
     @Bean
@@ -33,7 +34,7 @@ public class RabbitConfig {
 
     @Bean
     public Queue bookReplyQueue() {
-        return new Queue("author.book.reply.queue", true, false, false);
+        return new Queue("author.reply.queue", true, false, false);
     }
 
     @Bean
@@ -43,17 +44,25 @@ public class RabbitConfig {
 
     // Bindings
     @Bean
-    public Binding authorCreatedBinding(DirectExchange authorExchange, Queue authorCreatedQueue) {
+    public Binding authorCreatedBinding(
+            @Qualifier("authorExchange") DirectExchange authorExchange,
+            Queue authorCreatedQueue) {
         return BindingBuilder.bind(authorCreatedQueue).to(authorExchange).with("author.created");
     }
 
     @Bean
-    public Binding bookReplyBinding(DirectExchange bookRepliesExchange, Queue bookReplyQueue) {
-        return BindingBuilder.bind(bookReplyQueue).to(bookRepliesExchange).with("book.created.reply");
+    public Binding bookReplyBinding(
+            @Qualifier("bookRepliesExchange") DirectExchange bookRepliesExchange,
+            Queue bookReplyQueue) {
+        return BindingBuilder.bind(bookReplyQueue)
+                .to(bookRepliesExchange)
+                .with("author.reply"); // Antes era book.created.reply
     }
 
     @Bean
-    public Binding genreReplyBinding(DirectExchange genreRepliesExchange, Queue genreReplyQueue) {
+    public Binding genreReplyBinding(
+            @Qualifier("genreRepliesExchange") DirectExchange genreRepliesExchange,
+            Queue genreReplyQueue) {
         return BindingBuilder.bind(genreReplyQueue).to(genreRepliesExchange).with("genre.created.reply");
     }
 
