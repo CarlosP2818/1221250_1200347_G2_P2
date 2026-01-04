@@ -62,18 +62,36 @@ pipeline {
             steps {
                 dir('lms-authnusers') {
                     script {
-                        // Gerar tag baseada no build e commit
+                        // 1. Logs de Identificação
                         def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                         def buildTag = "${env.BUILD_NUMBER}-${shortCommit}"
                         def imageFullName = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
 
-                        // Build da imagem
+                        echo "DEBUG: A preparar build para imagem: ${imageFullName}"
+                        echo "DEBUG: Namespace configurado: ${DOCKER_NAMESPACE}"
+                        echo "DEBUG: Tag gerada: ${buildTag}"
+
+                        // 2. Build
                         def customImage = docker.build("${imageFullName}:${buildTag}")
 
-                        // Push para o Docker Hub
-                        docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_REGISTRY_CREDENTIALS) {
+                        // 3. Push com logs de autenticação
+                        // Importante: Removi o "https://" da URL, o plugin prefere apenas 'index.docker.io/v1/'
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+
+                            // Este bloco imprime qual o user que o Jenkins está a carregar das credenciais
+                            withCredentials([usernamePassword(credentialsId: DOCKER_REGISTRY_CREDENTIALS,
+                                             passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                                echo "DEBUG: A tentar login no Docker Hub com o utilizador: ${USER}"
+                                // sh "docker login -u ${USER} -p ${PASS}" // Opcional se o withRegistry falhar
+                            }
+
+                            echo "DEBUG: A iniciar push da tag ${buildTag}..."
                             customImage.push()
-                            customImage.push(params.BRANCH) // Tag com o nome da branch (ex: dev, main)
+
+                            echo "DEBUG: A iniciar push da branch ${params.BRANCH}..."
+                            customImage.push(params.BRANCH)
+
+                            echo "DEBUG: A iniciar push da tag latest..."
                             customImage.push("latest")
                         }
                     }
