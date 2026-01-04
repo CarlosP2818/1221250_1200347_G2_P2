@@ -1,0 +1,19 @@
+[
+  {
+    "title": "Aprendendo Microserviços",
+    "description": "Livro sobre arquitetura de microserviços em Java",
+    "genreId": "12345",
+    "photoURI": null,
+    "authors": [
+      {
+        "name": "João Silva",
+        "bio": "Bio1"
+      },
+      {
+        "name": "Maria Oliveira",
+        "bio": "Bio2"
+      }
+    ],
+    "correlationId": ""
+  }
+]
