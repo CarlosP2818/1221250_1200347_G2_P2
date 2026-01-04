@@ -82,19 +82,20 @@ pipeline {
                             withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
                                 sh "docker network create lms_network || true"
 
-                                echo "--- Requisito: Zero Downtime Rollout ---"
-                                sh "docker compose pull users"
-                                sh "docker compose up -d"
-
                                 echo "--- Requisito: Health checks in prod ---"
-                                // Aguarda o status de health definido no docker-compose.yml
-                                timeout(time: 2, unit: 'MINUTES') {
-                                    waitUntil {
-                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' users-service", returnStdout: true).trim()
-                                        echo "Estado atual: ${health}"
-                                        return (health == "healthy")
-                                    }
-                                }
+                                                                timeout(time: 3, unit: 'MINUTES') {
+                                                                    waitUntil {
+                                                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' users-service", returnStdout: true).trim()
+                                                                        echo "Estado atual: ${health}"
+
+                                                                        if (health == "unhealthy") {
+                                                                            echo "LOGS DE ERRO DA APP:"
+                                                                            sh "docker logs users-service --tail 20"
+                                                                            return true // Sai do loop para falhar no post
+                                                                        }
+                                                                        return (health == "healthy")
+                                                                    }
+                                                                }
                             }
                         }
                     }

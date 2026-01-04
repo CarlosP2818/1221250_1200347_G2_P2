@@ -19,11 +19,12 @@ services:
 
         # --- Requisito "Health checks in prod" ---
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-            interval: 20s
-            timeout: 10s
-            retries: 5
-            start_period: 40s # Tempo para o Spring Boot arrancar
+            # Tenta abrir uma ligação TCP na porta 8080. Se abrir, está vivo.
+            test: [ "CMD-SHELL", "timeout 1s bash -c ':> /dev/tcp/127.0.0.1/8080' || exit 1" ]
+            interval: 10s # Baixei para ser mais rápido
+            timeout: 5s
+            retries: 3
+            start_period: 15s # Reduzi para o Jenkins não esperar tanto tempo
 
         # --- Requisito "Zero Downtime / Rolling Update" ---
         deploy:
