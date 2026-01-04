@@ -99,36 +99,29 @@ pipeline {
             }
         }
 
-        stage('Deploy to VM (Staging)') {
+        stage('Deploy with Docker Compose') {
             steps {
-                script {
-                    def imageFullName = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
-                    def containerName = "lms-users-app"
-                    def hostPort = "30081"
-                    def containerPort = "8080" // A porta em que o Spring Boot corre dentro do jar
+                dir('lms-authnusers') { // Entra na pasta onde está o docker-compose.yml
+                    script {
+                        echo "A atualizar ambiente com Docker Compose..."
 
-                    echo "A iniciar deploy do contentor ${containerName}..."
+                        // 1. Garante que a rede externa existe (evita erro se não existir)
+                        sh "docker network create lms_network || true"
 
-                    // 1. Parar e remover o contentor antigo se ele existir
-                    sh "docker rm -f ${containerName} || true"
+                        // 2. Faz o Pull da imagem mais recente que acabaste de enviar para o Hub
+                        // (O compose vai usar a imagem do Hub em vez de fazer build local)
+                        sh "docker compose pull users"
 
-                    // 2. Limpar imagens antigas (opcional, para poupar espaço na VM)
-                    sh "docker image prune -f"
+                        // 3. Sobe os serviços em background (-d) e remove órfãos
+                        sh "docker compose up -d"
 
-                    // 3. Correr o novo contentor
-                    // Usamos a tag 'latest' que acabaste de enviar para o Hub
-                    sh """
-                        docker run -d \
-                        --name ${containerName} \
-                        -p ${hostPort}:${containerPort} \
-                        --restart unless-stopped \
-                        ${imageFullName}:latest
-                    """
-
-                    echo "Deploy concluído com sucesso em http://51.13.187.249:${hostPort}"
+                        echo "Serviços iniciados. A verificar estado..."
+                        sh "docker ps | grep users"
+                    }
                 }
             }
         }
+
 
         stage('Smoke Tests (Staging)') {
             when { expression { params.BRANCH == 'staging' } }
