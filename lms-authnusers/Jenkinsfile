@@ -10,36 +10,65 @@ pipeline {
         DOCKER_IMAGE_NAME = 'lms-authnusers'
         DOCKER_NAMESPACE = 'cralos062'
         IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
+        BUILD_TAG = "" // Será preenchido dinamicamente
     }
 
     stages {
-        stage('Checkout') { steps { checkout scm } }
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
         stage('Build & Unit Tests') {
-            steps { dir('lms-authnusers') { sh 'mvn clean test' } }
+            steps {
+                dir('lms-authnusers') {
+                    sh 'mvn clean test'
+                }
+            }
         }
 
         stage('Static Analysis & Mutation') {
             parallel {
-                stage('SpotBugs') { steps { dir('lms-authnusers') { sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs' } } }
-                stage('Pitest') { steps { dir('lms-authnusers') { sh 'mvn org.pitest:pitest-maven:mutationCoverage' } } }
+                stage('SpotBugs') {
+                    steps {
+                        dir('lms-authnusers') {
+                            sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs'
+                        }
+                    }
+                }
+                stage('Pitest') {
+                    steps {
+                        dir('lms-authnusers') {
+                            sh 'mvn org.pitest:pitest-maven:mutationCoverage'
+                        }
+                    }
+                }
             }
         }
 
         stage('Package Artifact') {
-            steps { dir('lms-authnusers') { sh 'mvn package -DskipTests'; archiveArtifacts artifacts: 'target/*.jar' } }
+            steps {
+                dir('lms-authnusers') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: 'target/*.jar'
+                }
+            }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Build & Push Docker Image (Pre-Release)') {
             steps {
                 dir('lms-authnusers') {
                     script {
                         def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        def buildTag = "${env.BUILD_NUMBER}-${shortCommit}"
-                        def customImage = docker.build("${IMAGE_FULL_NAME}:${buildTag}")
+                        env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+
+                        // Build da imagem com a tag única do build
+                        def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                            customImage.push("${buildTag}")
-                            customImage.push("latest")
+                            // Push apenas da tag única. O 'latest' ainda não é tocado!
+                            customImage.push("${env.BUILD_TAG}")
                         }
                     }
                 }
@@ -47,66 +76,87 @@ pipeline {
         }
 
         stage('Deploy & Health Check') {
-                    steps {
-                        dir('lms-authnusers') {
-                            script {
-                                docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                                    // Garantimos que a tag 'latest' é passada para o docker-compose.yml
-                                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
-                                        sh "docker network create lms_network || true"
+            steps {
+                dir('lms-authnusers') {
+                    script {
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                            // Injetamos a tag ÚNICA no docker-compose
+                            withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
+                                sh "docker network create lms_network || true"
 
-                                        echo "--- Requisito: Zero Downtime Rollout ---"
-                                        sh "docker compose pull users"
-                                        sh "docker compose up -d --remove-orphans"
+                                echo "--- Requisito: Zero Downtime Rollout ---"
+                                sh "docker compose pull users"
+                                sh "docker compose up -d --remove-orphans"
 
-                                        echo "--- Requisito: Health checks in prod ---"
-                                        timeout(time: 5, unit: 'MINUTES') {
-                                            waitUntil {
-                                                // Obtém o ID dinâmico (resolve o problema do nome fixo)
-                                                def containerId = sh(script: "docker compose ps -q users | head -n 1", returnStdout: true).trim()
+                                echo "--- Requisito: Health checks in prod ---"
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitUntil {
+                                        def containerId = sh(script: "docker compose ps -q users | head -n 1", returnStdout: true).trim()
+                                        if (!containerId) return false
 
-                                                if (!containerId) return false
+                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
+                                        echo "Estado do contentor: ${health}"
 
-                                                def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
-                                                echo "Estado do contentor: ${health}"
-
-                                                if (health == "unhealthy") {
-                                                    sh "docker logs ${containerId}"
-                                                    error "Deploy falhou: Contentor unhealthy"
-                                                }
-                                                return (health == "healthy")
-                                            }
+                                        if (health == "unhealthy") {
+                                            sh "docker logs ${containerId}"
+                                            error "Deploy falhou: Contentor unhealthy"
                                         }
+                                        return (health == "healthy")
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
 
-                stage('Smoke Tests') {
-                    steps {
-                        dir('lms-authnusers') {
-                            // Aqui a porta 30081 deve bater com o docker-compose
-                            sh 'export AUTH_URL="http://localhost:30081/api/public/login" && k6 run smoke_test.js'
-                        }
+        stage('Smoke Tests') {
+            steps {
+                dir('lms-authnusers') {
+                    script {
+                        echo "--- Executando Smoke Tests com k6 via Docker ---"
+                        // Usamos docker run para o k6 para garantir que o comando existe
+                        sh """
+                            docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js \
+                            -e AUTH_URL="http://localhost:30081/api/public/login"
+                        """
                     }
                 }
             }
+        }
 
-            post {
-                    failure {
-                        script {
-                            echo "--- Requisito: Automatically revoke release (Rollback) ---"
-                            // IMPORTANTE: O rollback tem de acontecer ANTES do cleanWs
-                            dir('lms-authnusers') {
-                                withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
-                                    // Forçamos o uso do ficheiro local
-                                    sh "docker compose -f docker-compose.yml down"
-                                    sh "docker compose -f docker-compose.yml up -d"
-                                }
-                            }
-                        }
+        stage('Promote to Latest') {
+            steps {
+                script {
+                    echo "--- Todos os testes passaram! Promovendo imagem para Latest no Registry ---"
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                        // Agora que passou tudo, marcamos como a versão oficial (latest)
+                        sh "docker pull ${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        sh "docker tag ${IMAGE_FULL_NAME}:${env.BUILD_TAG} ${IMAGE_FULL_NAME}:latest"
+                        sh "docker push ${IMAGE_FULL_NAME}:latest"
                     }
                 }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                echo "--- Requisito: Automatically revoke release (Rollback) ---"
+                dir('lms-authnusers') {
+                    // O rollback aponta para a tag :latest, que é a última versão estável
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                        sh "docker compose down"
+                        sh "docker compose up -d"
+                    }
+                }
+            }
+        }
+        always {
+            echo "--- Cleaning workspace ---"
+            cleanWs()
+        }
+    }
 }
