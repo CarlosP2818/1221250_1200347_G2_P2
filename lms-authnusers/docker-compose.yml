@@ -2,7 +2,7 @@ services:
     users:
         # Usamos a variável para o Jenkins injetar a tag correta
         image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
-        container_name: users-service
+        # container_name: users-service
         ports:
             - "8080:8080" # Porta externa 30081 conforme planeado
         depends_on:
