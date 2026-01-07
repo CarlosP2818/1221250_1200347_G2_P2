@@ -19,11 +19,6 @@ public  class RabbitConfig {
     }
 
     @Bean
-    public DirectExchange authorExchange() {
-        return new DirectExchange("author.events.exchange");
-    }
-
-    @Bean
     public DirectExchange genreExchange() {
         return new DirectExchange("genre.events.exchange");
     }
@@ -45,14 +40,20 @@ public  class RabbitConfig {
     }
 
     @Bean
-    public Queue authorCreatedQueue() {
-        return new Queue("author.created.queue", true, false, false);
+    public Queue bookCreatedQueue() {
+        return new Queue("book.author.genre.created.queue", true);
     }
 
     @Bean
-    public Queue genreCreatedQueue() {
-        return new Queue("genre.created.queue", true, false, false);
+    public Queue getUserByUsernameQueue() {
+        return new Queue("get.book.by.isbn.queue", true, false, false);
     }
+
+    @Bean
+    public Queue bookCreateQueue() {
+        return new Queue("book.create.queue", true, false, false);
+    }
+
 
     // -------------------- Bindings --------------------
     @Bean

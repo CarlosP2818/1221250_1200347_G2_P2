@@ -1,7 +1,6 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.impl.jpa;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.jpa;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;

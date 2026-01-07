@@ -28,7 +28,7 @@ public class BookMongoMapper {
                 new Isbn(mongo.getIsbn()),
                 new Title(mongo.getTitle()),
                 new Description(mongo.getDescription()),
-                mongo.getGenreId(),
+                mongo.getGenreName(),
                 mongo.getAuthorsIds(),
                 mongo.getPhoto() != null ? mongo.getPhoto() : null
         );
@@ -46,7 +46,7 @@ public class BookMongoMapper {
                 book.getDescription() != null
                         ? book.getDescription()
                         : null,
-                book.getGenreId(),
+                book.getGenreName(),
                 book.getAuthorsIds(),
                 book.getPhoto() != null && book.getPhoto().getPhotoFile() != null
                         ? book.getPhoto().getPhotoFile()

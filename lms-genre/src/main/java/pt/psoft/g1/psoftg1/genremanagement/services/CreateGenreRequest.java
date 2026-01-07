@@ -8,15 +8,11 @@ import lombok.*;
 @NoArgsConstructor
 public class CreateGenreRequest {
 
-    @Getter
-    @Setter
-    private String id;
-
     @NonNull
     @NotBlank
     @Getter
     @Setter
-    private String name;
+    private String genreName;
 
     @Getter
     @Setter

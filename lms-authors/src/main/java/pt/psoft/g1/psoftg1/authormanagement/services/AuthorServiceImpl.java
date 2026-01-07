@@ -68,7 +68,7 @@ public class AuthorServiceImpl implements AuthorService {
         OutboxEventMongo tempAuthor = new OutboxEventMongo();
         tempAuthor.setName(name);
         tempAuthor.setBio(bio);
-        tempAuthor.setSagaId(sagaId);
+        tempAuthor.setCorrelationId(sagaId.toString());
 
         tempAuthorRepository.save(tempAuthor);
 

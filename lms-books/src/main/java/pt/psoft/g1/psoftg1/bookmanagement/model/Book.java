@@ -29,7 +29,7 @@ public class Book extends EntityWithPhoto implements Serializable {
 
     @Getter
     @Setter
-    String genreId;
+    String genreName;
 
     @Getter
     @Setter
@@ -52,17 +52,17 @@ public class Book extends EntityWithPhoto implements Serializable {
         return this.description.toString();
     }
 
-    public Book(Isbn isbn, Title title, Description description, String genreId, List<String> authorsIds, String photoURI) {
+    public Book(Isbn isbn, Title title, Description description, String genreName, List<String> authorsIds, String photoURI) {
         if (isbn == null) throw new IllegalArgumentException("ISBN cannot be null");
         if (title == null) throw new IllegalArgumentException("Title cannot be null");
-        if (genreId == null) throw new IllegalArgumentException("Genre cannot be null");
+        if (genreName == null) throw new IllegalArgumentException("Genre cannot be null");
         if (authorsIds == null) throw new IllegalArgumentException("Authors list cannot be null");
         if (authorsIds.isEmpty()) throw new IllegalArgumentException("Authors list cannot be empty");
 
         setIsbn(isbn);
         setTitle(title);
         setDescription(description);
-        setGenreId(genreId);
+        setGenreName(genreName);
         setAuthorsIds(authorsIds);
         setPhotoInternal(photoURI);
     }
@@ -98,7 +98,7 @@ public class Book extends EntityWithPhoto implements Serializable {
         }
 
         if (genre != null) {
-            setGenreId(genre);
+            setGenreName(genre);
         }
 
         if (authors != null) {

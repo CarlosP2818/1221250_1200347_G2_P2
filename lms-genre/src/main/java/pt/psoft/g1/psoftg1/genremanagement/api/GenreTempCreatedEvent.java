@@ -8,6 +8,6 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 public class GenreTempCreatedEvent {
-    private UUID sagaId;
+    private String correlationId;
     private String genreName;
 }

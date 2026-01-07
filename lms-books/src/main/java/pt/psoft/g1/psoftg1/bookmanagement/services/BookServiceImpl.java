@@ -60,7 +60,7 @@ public class BookServiceImpl implements BookService {
                 new Isbn(isbn),
                 new Title(request.getTitle()),
                 new Description(request.getDescription()),
-                request.getGenreId(),
+                request.getGenreName(),
                 authorsNames,
                 request.getPhotoURI()
         );
@@ -82,8 +82,8 @@ public class BookServiceImpl implements BookService {
             book.setAuthorsIds(request.getAuthorsIds());
         }
 
-        if (StringUtils.hasText(String.valueOf(request.getGenreId()))) {
-            book.setGenreId(request.getGenreId());
+        if (StringUtils.hasText(String.valueOf(request.getGenreName()))) {
+            book.setGenreName(request.getGenreName());
         }
 
         if (StringUtils.hasText(request.getTitle())) {
@@ -122,11 +122,8 @@ public class BookServiceImpl implements BookService {
         event.setCreatedAt(LocalDateTime.now());
         event.setProcessed(false);
 
-        // 2. O Payload é o mais importante: guardamos o request (que tem nomes e bios)
-        // Usamos o toString() como já fizeste no create(), mas idealmente seria JSON
         event.setPayload(request.toString());
 
-        // 3. Salvar no MongoDB. AQUI a coleção "outbox_events" será criada!
         return outboxRepository.save(event);
     }
 

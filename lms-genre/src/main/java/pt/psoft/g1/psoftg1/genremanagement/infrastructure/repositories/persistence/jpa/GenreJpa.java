@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.jpa;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.jpa;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;

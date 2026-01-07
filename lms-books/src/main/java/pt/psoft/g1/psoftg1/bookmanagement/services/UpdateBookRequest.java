@@ -27,14 +27,14 @@ public class UpdateBookRequest {
     @Setter
     private MultipartFile photo;
 
-    private String genreId;
+    private String genreName;
 
     private List<String> authorsIds;
 
-    public UpdateBookRequest(String isbn, String title, String genreId, List<String> authorsIds, String description) {
+    public UpdateBookRequest(String isbn, String title, String genreName, List<String> authorsIds, String description) {
         this.isbn = isbn;
         this.title = title;
-        this.genreId = genreId;
+        this.genreName = genreName;
         this.authorsIds = authorsIds;
         this.description = description;
     }

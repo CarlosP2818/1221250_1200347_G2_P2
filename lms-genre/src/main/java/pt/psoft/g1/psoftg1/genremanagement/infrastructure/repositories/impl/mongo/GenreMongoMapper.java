@@ -1,9 +1,9 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.impl.mongo;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.mongo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo.GenreMongo;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.mongo.GenreMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.shared.services.IdGenerators.IdGenerator;
 

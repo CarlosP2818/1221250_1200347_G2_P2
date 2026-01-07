@@ -1,37 +1,34 @@
 package pt.psoft.g1.psoftg1.genremanagement.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.genremanagement.api.GenreTempCreatedEvent;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 
 @Service
-@RequiredArgsConstructor
 public class RabbitMQPublisher {
 
     private final RabbitTemplate rabbitTemplate;
-    private final DirectExchange directExchange; // configurada no RabbitConfig
+    private final DirectExchange directExchange;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public RabbitMQPublisher(
+            RabbitTemplate rabbitTemplate,
+            @Qualifier("genreExchange") DirectExchange directExchange
+    ) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.directExchange = directExchange;
+    }
 
     public void publishGenreCreated(Genre genre) {
         try {
-            GenreTempCreatedEvent event = new GenreTempCreatedEvent(genre.getSagaId(), genre.getGenre());
-            String message = objectMapper.writeValueAsString(event);
-            rabbitTemplate.convertAndSend(directExchange.getName(), "genre.created", message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+            GenreTempCreatedEvent event = new GenreTempCreatedEvent(genre.getCorrelationId(), genre.getGenre());
+            rabbitTemplate.convertAndSend(directExchange.getName(), "genre.created", event);
 
-    public void publishTempGenreCreated(OutboxEventMongo genre) {
-        try {
-            GenreTempCreatedEvent event = new GenreTempCreatedEvent(genre.getSagaId(), genre.getGenre());
-            String message = objectMapper.writeValueAsString(event);
-            rabbitTemplate.convertAndSend(directExchange.getName(), "genre.temp.created", message);
+            System.out.println("Published event for: " + genre.getGenre());
         } catch (Exception e) {
             e.printStackTrace();
         }

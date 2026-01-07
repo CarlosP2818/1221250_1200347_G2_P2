@@ -22,7 +22,7 @@ public class CreateBookRequest {
     private String title;
 
     @NotBlank
-    private String genreId;
+    private String genreName;
 
     @Nullable
     @Getter

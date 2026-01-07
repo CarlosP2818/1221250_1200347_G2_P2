@@ -24,7 +24,7 @@ public class Genre {
     @Setter
     @Column(unique = true)
     @Getter
-    private UUID sagaId;
+    private String correlationId;
 
     // ID da saga TEMP
     @Enumerated(EnumType.STRING)

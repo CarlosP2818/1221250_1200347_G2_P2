@@ -70,9 +70,9 @@ public class BookRepositoryMongoImpl implements BookRepository {
                     .regex("^" + query.getTitle(), "i");
         }
 
-        if (query.getGenreId() != null && !query.getGenreId().isBlank()) {
+        if (query.getGenreName() != null && !query.getGenreName().isBlank()) {
             criteria = criteria.and("genreId")
-                    .is(query.getGenreId());
+                    .is(query.getGenreName());
         }
 
         if (query.getAuthorIds() != null && !query.getAuthorIds().isEmpty()) {

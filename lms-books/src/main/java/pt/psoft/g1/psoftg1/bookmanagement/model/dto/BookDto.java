@@ -21,7 +21,7 @@ public class BookDto {
 
     private String description;
 
-    private String genreId;
+    private String genreName;
 
     private List<String> authorsIds;
 

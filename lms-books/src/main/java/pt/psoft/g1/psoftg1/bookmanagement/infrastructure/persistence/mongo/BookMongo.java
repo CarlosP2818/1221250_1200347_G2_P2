@@ -25,7 +25,7 @@ public class BookMongo {
 
     private String title;
 
-    private String genreId;
+    private String genreName;
 
     private List<String> authorsIds = new ArrayList<>();
 
@@ -45,7 +45,7 @@ public class BookMongo {
             setDescription(description);
         if(genre==null)
             throw new IllegalArgumentException("Genre cannot be null");
-        setGenreId(genre);
+        setGenreName(genre);
         if(authors == null)
             throw new IllegalArgumentException("Author list is null");
         if(authors.isEmpty())

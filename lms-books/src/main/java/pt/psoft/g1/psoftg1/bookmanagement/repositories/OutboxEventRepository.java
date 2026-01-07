@@ -13,4 +13,5 @@ public interface OutboxEventRepository {
     List<OutboxEventMongo> findAll(Page page);
     List<OutboxEventMongo> findUnprocessedEvents(Page page);
     void markAsProcessed(Long id);
+    Optional<OutboxEventMongo> findByCorrelationId(String correlationId);
 }

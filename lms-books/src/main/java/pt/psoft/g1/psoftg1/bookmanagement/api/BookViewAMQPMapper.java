@@ -10,7 +10,7 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public abstract class BookViewAMQPMapper extends MapperInterface {
 
-    @Mapping(target = "genre", source = "genreId")
+    @Mapping(target = "genre", source = "genreName")
     @Mapping(target = "isbn", source = "isbn")
     @Mapping(target = "description", source = "description")
     @Mapping(target = "title", source = "title")

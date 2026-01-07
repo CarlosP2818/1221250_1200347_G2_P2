@@ -1,18 +1,16 @@
 package pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.OutboxEventMongo;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.model.dto.BookDto;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.OutboxEventRepository;
 import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.BookFoundReply;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
-import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -22,55 +20,30 @@ public class OutboxPublisher {
     private final BookRepository bookRepository;
     private final BookEventsPublisher publisher;
 
-    @Transactional
     @Scheduled(fixedDelay = 5000)
     public void publishEvents() {
-
-        var events =
-                outboxRepository.findUnprocessedEvents(new Page(1, 10));
+        var events = outboxRepository.findUnprocessedEvents(new Page(1, 10));
 
         for (OutboxEventMongo event : events) {
             try {
-                if (event.getType().equals("BOOK_CREATED") && !event.isProcessed()) {
+                if ("BOOK_CREATION_REQUESTED".equals(event.getType()) && !event.isProcessed()) {
 
-                    Optional<Book> book = bookRepository.findByIsbn(event.getAggregateId());
-
-                    if (book.isEmpty()) {
-                        throw new IllegalStateException(
-                                "User with ID " + event.getAggregateId() + " not found"
-                        );
-                    }
-
-                    Book bookEntity = book.get();
-
+                    // 1. Prepara o Reply (Usa os dados do EVENTO, não da BD SQL)
                     BookFoundReply bookReply = new BookFoundReply(
                             event.getCorrelationId(),
                             BookDto.builder()
-                                    .isbn(bookEntity.getIsbn())
-                                    .title(bookEntity.getTitle().toString())
-                                    .description(bookEntity.getDescription())
-                                    .genreId(bookEntity.getGenreId())
-                                    .authorsIds(bookEntity.getAuthorsIds())
-                                    .photoURI(
-                                            bookEntity.getPhoto() != null
-                                                    ? bookEntity.getPhoto().getPhotoFile()
-                                                    : null
-                                    )
-                                    .version(bookEntity.getVersion())
-                                    .sagaId(bookEntity.getSagaId())
-                                    .status(bookEntity.getStatus())
+                                    .title(event.getAggregateId())
+                                    .sagaId(UUID.fromString(event.getCorrelationId()))
                                     .build()
                     );
 
+                    // 2. Publica para o RabbitMQ
                     publisher.publishBooKCreated(bookReply);
+                    System.out.println("BOOKS-PUBLISHER: Mensagem enviada para o RabbitMQ.");
+
                 }
-
-                event.setProcessed(true);
-
-                outboxRepository.save(event);
-
             } catch (Exception e) {
-                // Log the exception and continue with the next event
+                System.err.println("ERRO no Publisher: " + e.getMessage());
                 e.printStackTrace();
             }
         }

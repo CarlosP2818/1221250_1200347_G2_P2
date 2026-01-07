@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.mongo;
 
 import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.Id;

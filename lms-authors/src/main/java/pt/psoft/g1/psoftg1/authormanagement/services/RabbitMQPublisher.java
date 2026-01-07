@@ -26,26 +26,16 @@ public class RabbitMQPublisher {
     }
 
     public void publishAuthorCreated(Author author) {
-        try {
-            // Se o Author (SQL) não tem sagaId, podes passar null ou ajustar a lógica
-            AuthorTempCreatedEvent event = new AuthorTempCreatedEvent(author.getSagaId(), author.getName(), author.getBio());
-            String payload = objectMapper.writeValueAsString(event);
-            rabbitTemplate.convertAndSend(directExchange.getName(), "author.created", payload);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+            AuthorTempCreatedEvent event = new AuthorTempCreatedEvent(author.getName(), author.getBio());
+
+            rabbitTemplate.convertAndSend(directExchange.getName(), "author.created", event);
     }
 
     public void publishTempAuthorCreated(OutboxEventMongo author) {
-        try {
             // Aqui usas o sagaId que vem do MongoDB
-            AuthorTempCreatedEvent event = new AuthorTempCreatedEvent(author.getSagaId(), author.getName(), author.getBio());
-            String payload = objectMapper.writeValueAsString(event);
+            AuthorTempCreatedEvent event = new AuthorTempCreatedEvent(author.getName(), author.getBio());
 
             // IMPORTANTE: O routing key deve ser o mesmo que definiste no Binding do RabbitConfig
-            rabbitTemplate.convertAndSend(directExchange.getName(), "author.created", payload);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+            rabbitTemplate.convertAndSend(directExchange.getName(), "author.created", event);
     }
 }

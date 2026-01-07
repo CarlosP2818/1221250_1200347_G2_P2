@@ -4,5 +4,5 @@ import pt.psoft.g1.psoftg1.bookmanagement.services.GenreBookCountDTO;
 
 public record GenreFoundReply(
         String correlationId,
-        String genreId
+        String genreName
 ) {}

@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.impl.mongo;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.mongo;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -6,11 +6,10 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.mongo.GenreMongo;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.mongo.GenreMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.genremanagement.repositories.GenreRepository;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

@@ -1,7 +1,7 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.impl.jpa;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.jpa;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.jpa.GenreJpa;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.jpa.GenreJpa;
 
 import java.util.Optional;
 

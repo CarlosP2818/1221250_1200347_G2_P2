@@ -171,15 +171,20 @@ class AuthorServiceImplMutationTest {
     @Test
     void createTempAuthor_success() {
         UUID sagaId = UUID.randomUUID();
-        OutboxEventMongo tempAuthor = new OutboxEventMongo();
-        when(tempAuthorRepository.save(any())).thenReturn(tempAuthor);
+
+        when(tempAuthorRepository.save(any(OutboxEventMongo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = authorService.createTempAuthor("Alex", "Bio", sagaId);
 
         assertNotNull(result);
+        assertEquals(sagaId.toString(), result.getCorrelationId());
+
         verify(rabbitMQPublisher).publishTempAuthorCreated(argThat(a ->
-                a.getName().equals("Alex") && a.getBio().equals("Bio") && a.getSagaId().equals(sagaId)
-        ));    }
+                "Alex".equals(a.getName()) &&
+                        "Bio".equals(a.getBio()) &&
+                        sagaId.toString().equals(a.getCorrelationId())
+        ));
+    }
 
     // -------------------- MODEL APPLY PATCH --------------------
 

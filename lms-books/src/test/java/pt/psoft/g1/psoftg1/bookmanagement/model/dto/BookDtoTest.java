@@ -29,7 +29,7 @@ class BookDtoTest {
         book.setIsbn(isbn);
         book.setTitle(title);
         book.setDescription(description);
-        book.setGenreId(genreId);
+        book.setGenreName(genreId);
         book.setAuthorsIds(authorsIds);
         book.setPhotoURI(photoURI);
         book.setVersion(version);
@@ -40,7 +40,7 @@ class BookDtoTest {
         assertEquals(isbn, book.getIsbn());
         assertEquals(title, book.getTitle());
         assertEquals(description, book.getDescription());
-        assertEquals(genreId, book.getGenreId());
+        assertEquals(genreId, book.getGenreName());
         assertEquals(authorsIds, book.getAuthorsIds());
         assertEquals(photoURI, book.getPhotoURI());
         assertEquals(version, book.getVersion());
@@ -79,7 +79,7 @@ class BookDtoTest {
                 .isbn("978-3-16-148410-0")
                 .title("Builder Book")
                 .description("Description")
-                .genreId("3")
+                .genreName("3")
                 .authorsIds(authorsIds)
                 .photoURI("photoBuilder.jpg")
                 .version(2L)

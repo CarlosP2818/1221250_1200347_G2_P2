@@ -8,7 +8,6 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 public class AuthorTempCreatedEvent {
-    private UUID sagaId;
     private String name;
     private String bio;
 }

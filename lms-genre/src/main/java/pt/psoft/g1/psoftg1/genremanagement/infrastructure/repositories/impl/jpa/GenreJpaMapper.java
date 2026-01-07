@@ -1,8 +1,8 @@
-package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.impl.jpa;
+package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.jpa;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.persistence.jpa.GenreJpa;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.jpa.GenreJpa;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.shared.services.IdGenerators.IdGenerator;
 

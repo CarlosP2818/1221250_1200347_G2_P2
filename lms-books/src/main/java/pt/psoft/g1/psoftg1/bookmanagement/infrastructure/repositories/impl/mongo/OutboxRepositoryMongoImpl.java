@@ -65,4 +65,9 @@ public class OutboxRepositoryMongoImpl implements OutboxEventRepository {
         });
     }
 
+    @Override
+    public Optional<OutboxEventMongo> findByCorrelationId(String correlationId) {
+        return repo.findByCorrelationId(correlationId);
+    }
+
 }

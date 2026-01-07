@@ -4,6 +4,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.mongo.MongoDataOutboxEventRepo;
+import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.services.AuthorInnerRequest;
 import pt.psoft.g1.psoftg1.authormanagement.services.AuthorService;
 import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
@@ -21,6 +23,8 @@ public class AuthorReplyListener {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private MongoDataOutboxEventRepo mongoDataOutboxEventRepo;
 
     @RabbitListener(queues = "author.created.queue")
     public void receive(CreateBookEvent event) {
@@ -32,25 +36,56 @@ public class AuthorReplyListener {
         }
 
         List<AuthorInnerRequest> createdAuthors = new ArrayList<>();
+        List<OutboxEventMongo> savedTempAuthors = new ArrayList<>();
 
         for (AuthorInnerRequest authorReq : event.getAuthors()) {
             String name = authorReq.getName() != null ? authorReq.getName() : "Autor sem nome";
             String bio = authorReq.getBio() != null ? authorReq.getBio() : "Bio não fornecida";
 
-            CreateAuthorRequest request = new CreateAuthorRequest();
-            request.setName(name);
-            request.setBio(bio);
-            request.setCorrelationId(event.getCorrelationId());
+            // Criar autor temporário
+            OutboxEventMongo tempAuthor = new OutboxEventMongo();
+            tempAuthor.setName(name);
+            tempAuthor.setBio(bio);
+            tempAuthor.setCorrelationId(event.getCorrelationId());
+            tempAuthor.setProcessed(false);
 
-            var author = authorService.create(request); // cria o autor no DB
+            mongoDataOutboxEventRepo.save(tempAuthor);
+            savedTempAuthors.add(tempAuthor);
+
+            // Criar autor definitivo
+            CreateAuthorRequest createAuthorRequest = new CreateAuthorRequest();
+            createAuthorRequest.setName(tempAuthor.getName());
+            createAuthorRequest.setBio(tempAuthor.getBio());
+
+            try {
+                authorService.create(createAuthorRequest);
+                System.out.println("AUTHORS: Autor criado com sucesso - " + tempAuthor.getName());
+            } catch (Exception e) {
+                System.err.println("AUTHORS: Erro ao criar autor - " + e.getMessage());
+            }
 
             // Criar um DTO simples para enviar de volta
-            createdAuthors.add(new AuthorInnerRequest(author.getName(), author.getBio()));
+            createdAuthors.add(new AuthorInnerRequest(tempAuthor.getName(), tempAuthor.getBio()));
         }
 
         // Enviar reply para o Book Service
         AuthorFoundReply reply = new AuthorFoundReply(event.getCorrelationId(), createdAuthors);
-        rabbitTemplate.convertAndSend("book.replies.exchange", "author.reply", reply);
+        rabbitTemplate.convertAndSend(
+                "book.replies.exchange",
+                "author.book.reply",
+                reply
+        );
+
         System.out.println("AUTHORS: Reply enviado com sucesso!");
+
+        finalizeTempAuthors(savedTempAuthors);
+    }
+
+    private void finalizeTempAuthors(List<OutboxEventMongo> authors) {
+        for (OutboxEventMongo author : authors) {
+            author.setProcessed(true);
+        }
+        mongoDataOutboxEventRepo.saveAll(authors);
+        System.out.println("AUTHORS: Temporários finalizados com sucesso!");
     }
 }

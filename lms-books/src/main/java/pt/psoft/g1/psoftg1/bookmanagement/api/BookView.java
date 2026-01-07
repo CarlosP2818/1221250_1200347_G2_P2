@@ -20,7 +20,7 @@ public class BookView {
     private List<Long> authorsIds;
 
     @NotNull
-    private Long genreId;
+    private Long genreName;
 
     private String description;
 

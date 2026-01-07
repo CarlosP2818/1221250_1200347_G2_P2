@@ -58,7 +58,7 @@ class BookServiceImplTest {
         CreateBookRequest request = mock(CreateBookRequest.class);
         when(request.getTitle()).thenReturn("Clean Code");
         when(request.getDescription()).thenReturn("desc");
-        when(request.getGenreId()).thenReturn("GENRE1");
+        when(request.getGenreName()).thenReturn("GENRE1");
         when(request.getAuthors()).thenReturn(
                 List.of(new AuthorInnerRequest("1", "Robert Martin", "Bio"))
         );

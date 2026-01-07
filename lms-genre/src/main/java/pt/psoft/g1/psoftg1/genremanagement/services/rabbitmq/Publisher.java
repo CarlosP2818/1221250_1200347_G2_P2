@@ -4,7 +4,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import pt.psoft.g1.psoftg1.genremanagement.services.rabbitmq.events.GenreCreatedEvent;
+import pt.psoft.g1.psoftg1.genremanagement.services.CreateGenreRequest;
 
 @Service
 public class Publisher {
@@ -17,12 +17,12 @@ public class Publisher {
         this.genreExchange = genreExchange;
     }
 
-    public void sendCreateGenreEvent(String name, String correlationId) {
-        GenreCreatedEvent event = new GenreCreatedEvent(name, correlationId);
-        rabbitTemplate.convertAndSend(
-                genreExchange.getName(),
-                "genre.create",
-                event
+    public void sendCreateGenreEvent(CreateGenreRequest request, String correlationId) {
+        CreateGenreRequest event = new CreateGenreRequest(
+                request.getGenreName(),
+                correlationId
         );
+
+        rabbitTemplate.convertAndSend(genreExchange.getName(), "author.create", event);
     }
 }

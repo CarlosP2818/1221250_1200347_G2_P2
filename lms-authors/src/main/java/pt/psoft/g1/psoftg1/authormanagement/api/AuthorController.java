@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.services.AuthorService;
 import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
@@ -41,10 +41,25 @@ public class AuthorController {
     @Operation(summary = "Creates a new Author")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<OutboxEventMongo> create(@Valid CreateAuthorRequest resource) {
-        UUID sagaId = UUID.randomUUID(); // id único para a saga
-        OutboxEventMongo temp = authorService.createTempAuthor(resource.getName(), resource.getBio(), sagaId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(temp);
+    public ResponseEntity<AuthorView> create(@Valid CreateAuthorRequest resource) {
+        //Guarantee that the client doesn't provide a link on the body, null = no photo or error
+        resource.setPhotoURI(null);
+        MultipartFile file = resource.getPhoto();
+
+        String fileName = this.fileStorageService.getRequestPhoto(file);
+
+        if (fileName != null) {
+            resource.setPhotoURI(fileName);
+        }
+
+        final var author = authorService.create(resource);
+
+        final var newauthorUri = ServletUriComponentsBuilder.fromCurrentRequestUri()
+                .build().toUri();
+
+        return ResponseEntity.created(newauthorUri)
+                .eTag(Long.toString(author.getVersion()))
+                .body(authorViewMapper.toAuthorView(author));
     }
 
     // Update
