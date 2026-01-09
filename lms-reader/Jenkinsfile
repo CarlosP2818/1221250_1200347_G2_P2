@@ -25,7 +25,7 @@ pipeline {
 
         stage('Build & Unit Tests') {
             steps {
-                dir('lms-readers') {
+                dir('lms-reader') {
                     sh 'mvn clean test'
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
 
         stage('Package Artifact') {
             steps {
-                dir('lms-readers') {
+                dir('lms-reader') {
                     sh 'mvn package -DskipTests'
                     archiveArtifacts artifacts: 'target/*.jar'
                 }
@@ -61,7 +61,7 @@ pipeline {
 
        stage('Build & Push Docker Image') {
            steps {
-               dir('lms-readers') {
+               dir('lms-reader') {
                    script {
                        def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                        env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
@@ -79,7 +79,7 @@ pipeline {
 
         stage('Deploy & Health Check') {
             steps {
-                dir('lms-readers') {
+                dir('lms-reader') {
                     script {
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
                             // Injetamos a tag ÚNICA no docker-compose do Readers
@@ -116,7 +116,7 @@ pipeline {
 
         stage('Smoke Tests') {
             steps {
-                dir('lms-readers') {
+                dir('lms-reader') {
                     script {
                         echo "--- Executando Smoke Tests com k6 via Docker ---"
                         // Ajustado para a porta 8090 (ou 80 se fores via Traefik)
@@ -147,7 +147,7 @@ pipeline {
         failure {
             script {
                 echo "--- Requisito: Automatically revoke release (Rollback Readers) ---"
-                dir('lms-readers') {
+                dir('lms-reader') {
                     withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
                         sh "docker compose down"
                         sh "docker compose up -d"

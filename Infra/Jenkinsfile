@@ -11,7 +11,7 @@ pipeline {
                     // Definir os teus serviços e os nomes dos respetivos Jobs no Jenkins
                     def services = [
                         'lms-authnusers': 'usersnauth',
-                        'lms-readers': 'odsoft-p2-readers',
+                        'lms-reader': 'odsoft-p2-readers',
                         'lms-books': 'odsoft-p2-books',
                         'lms-authors': 'odsoft-p2-authors'
                     ]
