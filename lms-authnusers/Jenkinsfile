@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'M3'
+    }
+
     parameters {
         string(name: 'BRANCH', defaultValue: 'main', description: 'Branch a construir')
     }
