@@ -3,9 +3,9 @@ version: "3.9"
 services:
     users:
         image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
-        container_name: users-service # Mantido conforme pedido
+        # container_name removido para permitir Blue e Green em simultâneo
         ports:
-            - "8080:8080" # Porta mantida para acesso direto ou pelos outros serviços
+            - "${HOST_PORT:-8080}:8080"
         depends_on:
             postgres_users:
                 condition: service_healthy
@@ -16,38 +16,27 @@ services:
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
         networks:
-            - lms_network
-
-        # --- REQUISITO: Exposure/Release (Traefik Labels) ---
-        # Estas labels permitem que o Traefik funcione como Gateway na porta 80
-        # sem impedir que o serviço seja acedido diretamente pela 8080.
+            lms_network:
+                aliases:
+                    - users-service # O Readers continuará a usar este DNS
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
-            - "traefik.http.services.users.loadbalancer.server.port=8080"
-
-        # --- Requisito: Health checks in prod ---
+            - "traefik.http.routers.users-${COLOR:-blue}.rule=PathPrefix(`/api/users`)"
+            - "traefik.http.services.users-${COLOR:-blue}.loadbalancer.server.port=8080"
         healthcheck:
             test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
-            interval: 20s
-            timeout: 10s
+            interval: 10s
+            timeout: 5s
             retries: 5
-            start_period: 60s
-
-        # --- Requisito: Zero Downtime ---
-        # Nota: Com container_name fixo, o Docker faz o stop antes do start.
-        # Para mitigar isto, usamos a política de restart.
+            start_period: 40s
         deploy:
             update_config:
-                order: stop-first
-                failure_action: rollback
+                order: start-first # Sobe o novo antes de desligar o antigo
 
     postgres_users:
         container_name: postgres_users
         image: postgres:18
         restart: unless-stopped
-        ports:
-            - "5432:5432"
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
@@ -59,8 +48,6 @@ services:
         healthcheck:
             test: [ "CMD-SHELL", "pg_isready -U postgres" ]
             interval: 10s
-            retries: 5
-            timeout: 5s
 
 networks:
     lms_network:
