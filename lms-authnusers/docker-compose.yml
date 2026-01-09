@@ -34,7 +34,6 @@ services:
                 order: start-first
 
     postgres_users:
-        container_name: postgres_users
         image: postgres:18
         restart: unless-stopped
         environment:
@@ -44,7 +43,9 @@ services:
         volumes:
             - postgres_users_volume:/var/lib/postgresql
         networks:
-            - lms_network
+            lms_network:
+                aliases:
+                    - postgres_users
         healthcheck:
             test: [ "CMD-SHELL", "pg_isready -U postgres" ]
             interval: 10s
