@@ -2,7 +2,6 @@ version: "3.9"
 
 services:
     readers:
-        # No Jenkins, podes usar ${DOCKER_IMAGE} como no outro
         image: ${DOCKER_IMAGE:-cralos062/lms-readers:latest}
         container_name: readers-service
         ports:
