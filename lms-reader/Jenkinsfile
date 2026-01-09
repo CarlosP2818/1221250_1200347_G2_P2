@@ -1,6 +1,13 @@
 pipeline {
     agent any
-    tools { maven 'M3' }
+
+    tools {
+        maven 'M3'
+    }
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch a construir')
+    }
 
     environment {
         DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials'
@@ -10,23 +17,61 @@ pipeline {
     }
 
     stages {
-        stage('Checkout & Build') {
+        stage('Checkout') {
             steps {
                 checkout scm
-                dir('lms-reader') { sh 'mvn clean package -DskipTests' }
             }
         }
 
-        stage('Build & Push Docker') {
+        stage('Build & Unit Tests') {
+            steps {
+                dir('lms-reader') {
+                    sh 'mvn clean test'
+                }
+            }
+        }
+
+        stage('Static Analysis & Mutation') {
+            parallel {
+                stage('SpotBugs') {
+                    steps {
+                        dir('lms-reader') {
+                            sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs'
+                        }
+                    }
+                }
+                stage('Pitest') {
+                    steps {
+                        dir('lms-reader') {
+                            sh 'mvn org.pitest:pitest-maven:mutationCoverage'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Package Artifact') {
+            steps {
+                dir('lms-reader') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: 'target/*.jar'
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
             steps {
                 dir('lms-reader') {
                     script {
                         def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                         env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
 
+                        echo "A gerar imagem do Readers com a tag: ${env.BUILD_TAG}"
+
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
                             def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
                             customImage.push("${env.BUILD_TAG}")
+                            // Push da tag latest para servir de fallback no rollback
                             customImage.push("latest")
                         }
                     }
@@ -34,44 +79,116 @@ pipeline {
             }
         }
 
-        stage('Blue-Green Deploy') {
+        stage('Blue-Green Deploy & Health Check') {
             steps {
                 dir('lms-reader') {
                     script {
-                        // 1. Identificar cor ativa (procura pelo sufixo no nome do container)
-                        def activeColor = sh(script: "docker ps --format '{{.Names}}' | grep users-green && echo 'green' || echo 'blue'", returnStdout: true).trim()
-                        def nextColor = (activeColor == "blue") ? "green" : "blue"
-                        def nextPort = (nextColor == "blue") ? "8080" : "8081"
+                        // 1. Detetar qual a cor que não está a correr atualmente
+                        // Procuramos por contentores que pertençam ao projeto 'readers-green'
+                        def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep readers-green || true", returnStdout: true).trim()
 
-                        echo "--- Deploying ${nextColor.toUpperCase()} version ---"
+                        def nextColor = isGreenActive ? "blue" : "green"
+                        def activeColor = isGreenActive ? "green" : "blue"
 
-                        withEnv([
-                            "COLOR=${nextColor}",
-                            "HOST_PORT=${nextPort}",
-                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
-                        ]) {
-                            // Sobe o novo ambiente com um nome de projeto diferente para isolar
-                            sh "docker compose -p users-${nextColor} up -d users"
+                        // Definimos portas diferentes para evitar colisão durante o swap
+                        // Blue: 8090, Green: 8091
+                        def nextPort = (nextColor == "blue") ? "8090" : "8091"
 
-                            timeout(time: 5, unit: 'MINUTES') {
-                                waitUntil {
-                                    def containerId = sh(script: "docker compose -p users-${nextColor} ps -q users", returnStdout: true).trim()
-                                    def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
-                                    echo "Health de ${nextColor}: ${health}"
-                                    return (health == "healthy")
+                        echo "--- Iniciando Blue-Green Deploy ---"
+                        echo "Cor ativa: ${activeColor} | Próxima cor: ${nextColor} na porta ${nextPort}"
+
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                            withEnv([
+                                "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                                "COLOR=${nextColor}",
+                                "HOST_PORT=${nextPort}"
+                            ]) {
+                                sh "docker network create lms_network || true"
+
+                                // Subimos o novo ambiente usando um nome de projeto único (-p)
+                                sh "docker compose -p readers-${nextColor} up -d readers"
+
+                                echo "--- Aguardando Health Check (Actuator) do ${nextColor} ---"
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitUntil {
+                                        def containerId = sh(script: "docker compose -p readers-${nextColor} ps -q readers", returnStdout: true).trim()
+                                        if (!containerId) return false
+
+                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
+                                        echo "Estado do contentor ${nextColor}: ${health}"
+
+                                        if (health == "unhealthy") {
+                                            sh "docker logs ${containerId}"
+                                            error "Deploy falhou: Contentor ${nextColor} unhealthy"
+                                        }
+                                        return (health == "healthy")
+                                    }
                                 }
+
+                                // Guardamos estas variáveis para os Smoke Tests e Cleanup
+                                env.NEXT_COLOR = nextColor
+                                env.ACTIVE_COLOR = activeColor
+                                env.NEXT_PORT = nextPort
                             }
-
-                            // Smoke Tests contra a nova cor
-                            sh "docker run --rm --network host loadimpact/k6 run - < smoke_test.js -e READERS_URL='http://localhost:${nextPort}/api/readers'"
-
-                            // Se chegou aqui, removemos o antigo
-                            echo "--- Desligando versão antiga (${activeColor}) ---"
-                            sh "docker compose -p users-${activeColor} down || true"
                         }
                     }
                 }
             }
+        }
+
+        stage('Smoke Tests') {
+            steps {
+                dir('lms-reader') {
+                    script {
+                        echo "--- Executando Smoke Tests na nova versão (${env.NEXT_COLOR}) porta ${env.NEXT_PORT} ---"
+                        sh """
+                            docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js \
+                            -e READERS_URL="http://localhost:${env.NEXT_PORT}/api/readers"
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Switch Traffic & Cleanup') {
+            steps {
+                script {
+                    echo "--- Smoke Tests passaram! Removendo versão antiga (${env.ACTIVE_COLOR}) ---"
+                    dir('lms-reader') {
+                        // Desliga o projeto da cor antiga
+                        sh "docker compose -p readers-${env.ACTIVE_COLOR} down || true"
+                    }
+                }
+            }
+        }
+
+        stage('Promote to Latest') {
+            steps {
+                script {
+                    echo "--- Atualizando tag Latest no Docker Hub ---"
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                        sh "docker tag ${IMAGE_FULL_NAME}:${env.BUILD_TAG} ${IMAGE_FULL_NAME}:latest"
+                        sh "docker push ${IMAGE_FULL_NAME}:latest"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                echo "--- ERRO detetado: Mantendo versão antiga ou efetuando rollback ---"
+                // Se o deploy da nova cor falhou, tentamos garantir que o ambiente antigo não foi afetado
+                // e limpamos a cor que falhou
+                dir('lms-reader') {
+                    sh "docker compose -p readers-${env.NEXT_COLOR} down || true"
+                }
+            }
+        }
+        always {
+            echo "--- Limpando Workspace ---"
+            cleanWs()
         }
     }
 }
