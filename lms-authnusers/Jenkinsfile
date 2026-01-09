@@ -72,7 +72,7 @@ pipeline {
                         def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep users-green || true", returnStdout: true).trim()
                         env.ACTIVE_COLOR = isGreenActive ? "green" : "blue"
                         env.NEXT_COLOR = isGreenActive ? "blue" : "green"
-                        env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "8080" : "8081"
+                        env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "30080" : "30081"
 
                         echo "Ativo: ${env.ACTIVE_COLOR} | Deploying: ${env.NEXT_COLOR} na porta ${env.NEXT_PORT}"
 
