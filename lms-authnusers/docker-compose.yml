@@ -3,7 +3,7 @@ version: "3.9"
 services:
     users:
         image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
-        # container_name removido para permitir Blue e Green em simultâneo
+        # container_name removido para não haver conflito durante o swap Blue/Green
         ports:
             - "${HOST_PORT:-8080}:8080"
         depends_on:
@@ -18,7 +18,7 @@ services:
         networks:
             lms_network:
                 aliases:
-                    - users-service # O Readers continuará a usar este DNS
+                    - users-service # O Readers usa este nome para comunicar
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.users-${COLOR:-blue}.rule=PathPrefix(`/api/users`)"
@@ -31,7 +31,7 @@ services:
             start_period: 40s
         deploy:
             update_config:
-                order: start-first # Sobe o novo antes de desligar o antigo
+                order: start-first
 
     postgres_users:
         container_name: postgres_users

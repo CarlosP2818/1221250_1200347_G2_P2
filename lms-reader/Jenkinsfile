@@ -11,7 +11,7 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials'
-        DOCKER_IMAGE_NAME = 'lms-readers'
+        DOCKER_IMAGE_NAME = 'lms-readers' // Nome do serviço Readers
         DOCKER_NAMESPACE = 'cralos062'
         IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
     }
@@ -59,76 +59,55 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image') {
+       stage('Build & Push Docker Image') {
+           steps {
+               dir('lms-reader') {
+                   script {
+                       def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                       env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+
+                       echo "A gerar imagem do Readers com a tag: ${env.BUILD_TAG}"
+
+                       def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+                       docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                           customImage.push("${env.BUILD_TAG}")
+
+                       }
+                   }
+               }
+           }
+       }
+
+        stage('Deploy & Health Check') {
             steps {
                 dir('lms-reader') {
                     script {
-                        def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
-
-                        echo "A gerar imagem do Readers com a tag: ${env.BUILD_TAG}"
-
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                            def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
-                            customImage.push("${env.BUILD_TAG}")
-                            // Push da tag latest para servir de fallback no rollback
-                            customImage.push("latest")
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Blue-Green Deploy & Health Check') {
-            steps {
-                dir('lms-reader') {
-                    script {
-                        // 1. Detetar qual a cor que não está a correr atualmente
-                        // Procuramos por contentores que pertençam ao projeto 'readers-green'
-                        def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep readers-green || true", returnStdout: true).trim()
-
-                        def nextColor = isGreenActive ? "blue" : "green"
-                        def activeColor = isGreenActive ? "green" : "blue"
-
-                        // Definimos portas diferentes para evitar colisão durante o swap
-                        // Blue: 8090, Green: 8091
-                        def nextPort = (nextColor == "blue") ? "8090" : "8091"
-
-                        echo "--- Iniciando Blue-Green Deploy ---"
-                        echo "Cor ativa: ${activeColor} | Próxima cor: ${nextColor} na porta ${nextPort}"
-
-                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                            withEnv([
-                                "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
-                                "COLOR=${nextColor}",
-                                "HOST_PORT=${nextPort}"
-                            ]) {
+                            // Injetamos a tag ÚNICA no docker-compose do Readers
+                            withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
                                 sh "docker network create lms_network || true"
 
-                                // Subimos o novo ambiente usando um nome de projeto único (-p)
-                                sh "docker compose -p readers-${nextColor} up -d readers"
+                                echo "--- Requisito: Zero Downtime Rollout (Readers) ---"
+                                sh "docker compose pull readers"
+                                sh "docker compose up -d --remove-orphans"
 
-                                echo "--- Aguardando Health Check (Actuator) do ${nextColor} ---"
+                                echo "--- Requisito: Health checks in prod ---"
                                 timeout(time: 5, unit: 'MINUTES') {
                                     waitUntil {
-                                        def containerId = sh(script: "docker compose -p readers-${nextColor} ps -q readers", returnStdout: true).trim()
+                                        // Busca o ID do contentor do serviço 'readers'
+                                        def containerId = sh(script: "docker compose ps -q readers | head -n 1", returnStdout: true).trim()
                                         if (!containerId) return false
 
                                         def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
-                                        echo "Estado do contentor ${nextColor}: ${health}"
+                                        echo "Estado do contentor Readers: ${health}"
 
                                         if (health == "unhealthy") {
                                             sh "docker logs ${containerId}"
-                                            error "Deploy falhou: Contentor ${nextColor} unhealthy"
+                                            error "Deploy falhou: Contentor Readers unhealthy"
                                         }
                                         return (health == "healthy")
                                     }
                                 }
-
-                                // Guardamos estas variáveis para os Smoke Tests e Cleanup
-                                env.NEXT_COLOR = nextColor
-                                env.ACTIVE_COLOR = activeColor
-                                env.NEXT_PORT = nextPort
                             }
                         }
                     }
@@ -140,23 +119,12 @@ pipeline {
             steps {
                 dir('lms-reader') {
                     script {
-                        echo "--- Executando Smoke Tests na nova versão (${env.NEXT_COLOR}) porta ${env.NEXT_PORT} ---"
+                        echo "--- Executando Smoke Tests com k6 via Docker ---"
+                        // Ajustado para a porta 8090 (ou 80 se fores via Traefik)
                         sh """
                             docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js \
-                            -e READERS_URL="http://localhost:${env.NEXT_PORT}/api/readers"
+                            -e READERS_URL="http://localhost:8090/api/readers"
                         """
-                    }
-                }
-            }
-        }
-
-        stage('Switch Traffic & Cleanup') {
-            steps {
-                script {
-                    echo "--- Smoke Tests passaram! Removendo versão antiga (${env.ACTIVE_COLOR}) ---"
-                    dir('lms-reader') {
-                        // Desliga o projeto da cor antiga
-                        sh "docker compose -p readers-${env.ACTIVE_COLOR} down || true"
                     }
                 }
             }
@@ -165,8 +133,9 @@ pipeline {
         stage('Promote to Latest') {
             steps {
                 script {
-                    echo "--- Atualizando tag Latest no Docker Hub ---"
+                    echo "--- Todos os testes passaram! Promovendo imagem Readers para Latest ---"
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                        sh "docker pull ${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
                         sh "docker tag ${IMAGE_FULL_NAME}:${env.BUILD_TAG} ${IMAGE_FULL_NAME}:latest"
                         sh "docker push ${IMAGE_FULL_NAME}:latest"
                     }
@@ -178,17 +147,17 @@ pipeline {
     post {
         failure {
             script {
-                echo "--- ERRO detetado: Mantendo versão antiga ou efetuando rollback ---"
-                // Se o deploy da nova cor falhou, tentamos garantir que o ambiente antigo não foi afetado
-                // e limpamos a cor que falhou
+                echo "--- Requisito: Automatically revoke release (Rollback Readers) ---"
                 dir('lms-reader') {
-                    sh "docker compose -p readers-${env.NEXT_COLOR} down || true"
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest"]) {
+                        sh "docker compose down"
+                        sh "docker compose up -d"
+                    }
                 }
             }
         }
         always {
-            echo "--- Limpando Workspace ---"
-            cleanWs()
+            echo "--- Cleaning workspace ---"
         }
     }
 }
