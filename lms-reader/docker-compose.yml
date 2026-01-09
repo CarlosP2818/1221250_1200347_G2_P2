@@ -1,13 +1,13 @@
+version: "3.9"
 
 services:
     readers:
-        image: lms-readers:latest
+        # No Jenkins, podes usar ${DOCKER_IMAGE} como no outro
+        image: ${DOCKER_IMAGE:-cralos062/lms-readers:latest}
         container_name: readers-service
-        build:
-            context: .
         ports:
-            - "8090:8090"
-        depends_on:    # adopting database per-service, this might not be a common service
+            - "8090:8090" # Mantida a porta para comunicação direta entre serviços
+        depends_on:
             postgres_readers:
                 condition: service_healthy
         environment:
@@ -20,9 +20,31 @@ services:
         networks:
             - lms_network
 
-    postgres_readers:   # if the database is not a common service, this would be necessary
+        # --- REQUISITO: Exposure/Release (Traefik Labels) ---
+        labels:
+            - "traefik.enable=true"
+            # Rota específica para readers
+            - "traefik.http.routers.readers.rule=PathPrefix(`/api/readers`)"
+            - "traefik.http.services.readers.loadbalancer.server.port=8090"
+
+        # --- REQUISITO: Health checks in prod ---
+        healthcheck:
+            # O Spring Boot precisa da dependência 'spring-boot-starter-actuator'
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/actuator/health" ]
+            interval: 20s
+            timeout: 10s
+            retries: 5
+            start_period: 60s
+
+        # --- REQUISITO: Zero Downtime / Rolling Update ---
+        deploy:
+            update_config:
+                order: stop-first
+                failure_action: rollback
+
+    postgres_readers:
         container_name: postgres_readers
-        image: postgres:latest
+        image: postgres:18 # Usando a 18 para consistência com o outro serviço
         restart: always
         ports:
             - "5433:5432"
@@ -31,6 +53,7 @@ services:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
         volumes:
+            # Ajustado para /var/lib/postgresql para evitar o erro do Postgres 18+
             - postgres_readers_volume:/var/lib/postgresql
         networks:
             - lms_network

@@ -1,10 +1,11 @@
+version: "3.9"
+
 services:
     users:
-        # Usamos a variável para o Jenkins injetar a tag correta
         image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
-        # container_name: users-service
+        container_name: users-service # Mantido conforme pedido
         ports:
-            - "8080:8080" # Porta externa 30081 conforme planeado
+            - "8080:8080" # Porta mantida para acesso direto ou pelos outros serviços
         depends_on:
             postgres_users:
                 condition: service_healthy
@@ -17,19 +18,28 @@ services:
         networks:
             - lms_network
 
-        # --- Requisito "Health checks in prod" ---
-        healthcheck:
-            # O Docker entra no container e tenta aceder ao endpoint interno
-            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
-            interval: 20s        # Verifica a cada 20 segundos
-            timeout: 10s         # Espera 10s pela resposta
-            retries: 5           # Tenta 5 vezes antes de marcar como "unhealthy"
-            start_period: 60s # Reduzi para o Jenkins não esperar tanto tempo
+        # --- REQUISITO: Exposure/Release (Traefik Labels) ---
+        # Estas labels permitem que o Traefik funcione como Gateway na porta 80
+        # sem impedir que o serviço seja acedido diretamente pela 8080.
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
+            - "traefik.http.services.users.loadbalancer.server.port=8080"
 
-        # --- Requisito "Zero Downtime / Rolling Update" ---
+        # --- Requisito: Health checks in prod ---
+        healthcheck:
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+            interval: 20s
+            timeout: 10s
+            retries: 5
+            start_period: 60s
+
+        # --- Requisito: Zero Downtime ---
+        # Nota: Com container_name fixo, o Docker faz o stop antes do start.
+        # Para mitigar isto, usamos a política de restart.
         deploy:
             update_config:
-                order: start-first
+                order: stop-first
                 failure_action: rollback
 
     postgres_users:
@@ -43,7 +53,7 @@ services:
             POSTGRES_PASSWORD: password
             POSTGRES_DB: users_1
         volumes:
-            - postgres_users_volume:/var/lib/postgresql  # montar diretamente em /var/lib/postgresql
+            - postgres_users_volume:/var/lib/postgresql
         networks:
             - lms_network
         healthcheck:
