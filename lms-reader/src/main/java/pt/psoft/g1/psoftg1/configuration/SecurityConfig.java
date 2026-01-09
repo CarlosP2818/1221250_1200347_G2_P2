@@ -97,6 +97,7 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/readers/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
                 // Todos os outros exigem autenticação
                 .anyRequest().authenticated()
                 .and().httpBasic(Customizer.withDefaults())
