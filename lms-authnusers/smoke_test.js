@@ -17,8 +17,8 @@ export default function () {
     const url = __ENV.AUTH_URL || 'http://localhost:8080/api/public/login';
 
     const payload = JSON.stringify({
-        username: 'admin@mail.com',
-        password: 'Password123!',
+        username: 'maria@gmail.com',
+        password: 'Mariaroberta!123',
     });
 
     const params = {
