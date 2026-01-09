@@ -35,14 +35,14 @@ pipeline {
             parallel {
                 stage('SpotBugs') {
                     steps {
-                        dir('lms-readers') {
+                        dir('lms-reader') {
                             sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs'
                         }
                     }
                 }
                 stage('Pitest') {
                     steps {
-                        dir('lms-readers') {
+                        dir('lms-reader') {
                             sh 'mvn org.pitest:pitest-maven:mutationCoverage'
                         }
                     }
