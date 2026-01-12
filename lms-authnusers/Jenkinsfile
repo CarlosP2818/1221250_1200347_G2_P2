@@ -116,7 +116,6 @@ pipeline {
                         ]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                             sleep 10
-                            // k6 testa diretamente o container via rede interna
                             sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://${containerName}:8080'"
                         }
 
