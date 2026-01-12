@@ -103,6 +103,7 @@ pipeline {
 
       stage('Verify Strategies (k6)') {
                 steps {
+                dir('lms-authnusers') {
                     script {
                         // 1. Descobrimos o nome do container atual (ex: users-green-users-1)
                         def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
@@ -138,6 +139,7 @@ pipeline {
                         ]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                         }
+                    }
                     }
                 }
             }
