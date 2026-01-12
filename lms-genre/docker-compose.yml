@@ -1,50 +1,64 @@
+version: "3.9"
+
 services:
     genre-service:
-        image: lms-genre:latest
-        container_name: genre-service
-        build:
-            context: .
+        image: ${DOCKER_IMAGE}
+        container_name: genre-${COLOR:-blue}
         ports:
-            - "8089:8089"
+            - "${HOST_PORT:-8089}:8089"
         depends_on:
-            - mongo_genres
+            mongo_genres:
+                condition: service_healthy
         environment:
             SPRING_PROFILES_ACTIVE: mongo,bootstrap,base65,instance1
             SPRING_DATA_MONGODB_URI: mongodb://mongoadmin:48aed78edc140a47a9f5d53a@mongo_genres:27017/genres_1?authSource=admin
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
-
             FILE_UPLOAD_DIR: uploads
         networks:
             - lms_network
         volumes:
-            - uploaded_files_volume_1:/tmp
+            - uploaded_files_volume_${COLOR:-blue}:/tmp
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.genre-${COLOR:-blue}.rule=PathPrefix(`/api/genres`)"
+            - "traefik.http.routers.genre-${COLOR:-blue}.entrypoints=web"
+            - "traefik.http.routers.genre-${COLOR:-blue}.service=genre-canary-service"
+            
+            # Lógica de Pesos para Canary
+            - "traefik.http.services.genre-canary-service.loadbalancer.weighted.services.genre-${COLOR:-blue}-backend@docker"
+            - "traefik.http.services.genre-canary-service.loadbalancer.services.genre-${COLOR:-blue}-backend@docker.weight=${WEIGHT:-0}"
+            - "traefik.http.services.genre-${COLOR:-blue}-backend@docker.loadbalancer.server.port=8089"
+
+        healthcheck:
+            test: [ "CMD", "curl", "-f", "http://localhost:8089/actuator/health" ]
+            interval: 20s
+            timeout: 10s
+            retries: 5
+            start_period: 60s
 
     mongo_genres:
+        container_name: mongo-genres-${COLOR:-blue}
         image: mongo:6
-        container_name: mongo_genres
         restart: unless-stopped
-        ports:
-            - "27019:27017"
         environment:
             MONGO_INITDB_ROOT_USERNAME: mongoadmin
             MONGO_INITDB_ROOT_PASSWORD: 48aed78edc140a47a9f5d53a
             MONGO_INITDB_DATABASE: genres_1
         volumes:
-            - mongo_data:/data/db
+            - mongo_data_${COLOR:-blue}:/data/db
         networks:
             - lms_network
         healthcheck:
-            test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })" ]
+            test: ["CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })"]
             interval: 10s
-            timeout: 5s
-            retries: 5
-
 
 networks:
     lms_network:
         external: true
 
 volumes:
-    mongo_data:
-    uploaded_files_volume_1:
+    mongo_data_blue:
+    mongo_data_green:
+    uploaded_files_volume_blue:
+    uploaded_files_volume_green:

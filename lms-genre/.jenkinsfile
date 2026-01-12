@@ -1,144 +1,117 @@
 pipeline {
     agent any
 
+    tools { maven 'M3' }
+
     environment {
-
-        //MAVEN_HOME = '/opt/homebrew' // (MacOS)
-        MAVEN_HOME = '/usr/share/maven' // (Ubuntu)
-
-        GIT_REPO_URL = 'https://nunopsilva@bitbucket.org/nunopsilva/lms-books.git'  // Your Git repository URL
-        GIT_BRANCH = 'master'  // Specify the branch to check out
-        CREDENTIALS_ID = 'user_app_password_para_bitbucket'  // Credentials ID for authentication
-
-        SERVER_PORT = '2226'
-
-        IMAGE_NAME = 'lmsbooks'
-        IMAGE_TAG = 'latest'
+        DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials'
+        DOCKER_IMAGE_NAME = 'lms-genre'
+        DOCKER_NAMESPACE = 'cralos062'
+        IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
+        MAVEN_HOME = '/usr/share/maven'
     }
 
     stages {
-
-        stage('Debug Environment') {
+        stage('Checkout & Build') {
             steps {
-                sh 'env'
+                checkout scm
+                // Executa o build maven conforme o teu original
+                sh "${MAVEN_HOME}/bin/mvn clean install -DskipTests"
             }
         }
 
-
-        stage('Check Docker') {
-            steps {
-                sh 'docker --version'
-            }
-        }
-
-        stage('Checkout') {
-            steps {
-                // Step to clone the Git repository
-                git branch: "${GIT_BRANCH}",
-                    url: "${GIT_REPO_URL}",
-                    credentialsId: "${CREDENTIALS_ID}"
-            }
-        }
-
-        stage('Clean') {
-            steps {
-                script {
-                    sh """
-                        ${MAVEN_HOME}/bin/mvn clean install
-                    """
+        stage('Static Analysis') {
+            parallel {
+                stage('SpotBugs') {
+                    steps { sh "${MAVEN_HOME}/bin/mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs" }
                 }
-            }
-        }
-/*
-        stage('Validate') {
-            steps {
-                script {
-                    sh "'${MAVEN_HOME}/bin/mvn' validate"
+                stage('Pitest') {
+                    steps { sh "${MAVEN_HOME}/bin/mvn org.pitest:pitest-maven:mutationCoverage" }
                 }
             }
         }
 
-        stage('Compile') {
+        stage('Build & Push Image') {
             steps {
                 script {
-                    sh "'${MAVEN_HOME}/bin/mvn' compile"
-                }
-            }
-        }
+                    def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
 
-        stage('Test') {
-            steps {
-                script {
-                    // Run tests
-                    withEnv(["PATH+JDK=${JAVA_HOME}/bin"]) {
-                        sh "'${MAVEN_HOME}/bin/mvn' test"
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                        def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+                        customImage.push("${env.BUILD_TAG}")
+                        customImage.push("latest")
                     }
                 }
             }
         }
 
-        stage('Package') {
+        stage('Canary Deploy (Weight 0)') {
             steps {
                 script {
-                    // Package the application
-                    sh "'${MAVEN_HOME}/bin/mvn' package"
+                    def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep genre-green || true", returnStdout: true).trim()
+                    env.ACTIVE_COLOR = isGreenActive ? "green" : "blue"
+                    env.NEXT_COLOR = isGreenActive ? "blue" : "green"
+                    env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "30070" : "30071"
+                    env.ACTIVE_PORT = (env.ACTIVE_COLOR == "blue") ? "30070" : "30071"
+
+                    echo "Ativo: ${env.ACTIVE_COLOR} | Deploying Canary Genre: ${env.NEXT_COLOR} (Peso 0)"
+
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=0"]) {
+                        sh "docker network create lms_network || true"
+                        sh "docker compose up -d"
+
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitUntil {
+                                def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' genre-${env.NEXT_COLOR}", returnStdout: true).trim()
+                                return (health == "healthy")
+                            }
+                        }
+                    }
                 }
             }
         }
-*/
-        stage('Build Docker Image') {
+
+        stage('Canary Observation (50/50)') {
             steps {
                 script {
-                    sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    """
+                    echo "--- Tráfego 50/50 entre ${env.ACTIVE_COLOR} e ${env.NEXT_COLOR} ---"
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=50"]) {
+                        sh "docker compose -p genre-${env.NEXT_COLOR} up -d --no-deps genre-service"
+                    }
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest", "COLOR=${env.ACTIVE_COLOR}", "HOST_PORT=${env.ACTIVE_PORT}", "WEIGHT=50"]) {
+                        sh "docker compose -p genre-${env.ACTIVE_COLOR} up -d --no-deps genre-service"
+                    }
+                }
+                input message: "Aprovar promoção total para ${env.NEXT_COLOR}?", ok: "Promover"
+            }
+        }
+
+        stage('Switch Traffic (100%)') {
+            steps {
+                script {
+                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=100"]) {
+                        sh "docker compose -p genre-${env.NEXT_COLOR} up -d --no-deps genre-service"
+                    }
                 }
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Cleanup Old Version') {
             steps {
                 script {
-                    sh """
-
-                        if ! docker ps --filter "name=rabbitmq_in_lms_network" --format '{{.Names}}' | grep -q rabbitmq_in_lms_network; then
-                          docker compose -f docker-compose-rabbitmq.yml up -d
-                        else
-                          echo "RabbitMQ container already running."
-                        fi
-
-                        if ! docker ps --filter "name=postgres_in_lms_network" --format '{{.Names}}' | grep -q postgres_in_lms_network; then
-                          docker compose -f docker-compose-postgres.yml up -d
-                        else
-                          echo "Postgres container already running."
-                        fi
-
-
-                        docker compose -f docker-compose.yml up -d --force-recreate
-
-                    """
+                    sh "docker compose -p genre-${env.ACTIVE_COLOR} down || true"
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
         failure {
-            echo 'Pipeline failed!'
+            script {
+                sh "docker compose -p genre-${env.NEXT_COLOR} down || true"
+            }
         }
+        always { cleanWs() }
     }
-
-////if containers are to be removed
-//     post {
-//         always {
-//             echo 'Cleaning up...'
-//             sh """
-//                 docker compose -f docker-compose.yml down || true
-//             """
-//         }
-//     }
-
 }
