@@ -1,9 +1,6 @@
-version: "3.9"
-
 services:
     readers:
         image: ${DOCKER_IMAGE:-cralos062/lms-readers:latest}
-        # container_name removido para evitar conflitos no swap Blue/Green
         ports:
             - "${HOST_PORT:-8090}:8090"
         depends_on:
@@ -27,15 +24,11 @@ services:
             - "traefik.http.routers.readers-${COLOR:-blue}.rule=PathPrefix(`/api/readers`)"
             - "traefik.http.services.readers-${COLOR:-blue}.loadbalancer.server.port=8090"
         healthcheck:
-            # Usando wget para consistência com o teu exemplo do Users
             test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/actuator/health" ]
-            interval: 10s
+            interval: 15s
             timeout: 5s
             retries: 5
-            start_period: 40s
-        deploy:
-            update_config:
-                order: start-first
+            start_period: 60s # Aumentado para dar tempo à app de arrancar após a BD
 
     postgres_readers:
         image: postgres:18
@@ -45,15 +38,18 @@ services:
             POSTGRES_PASSWORD: password
             POSTGRES_DB: readers_1
         volumes:
-            # Volume partilhado ou específico por projeto conforme o prefixo -p
             - postgres_readers_volume:/var/lib/postgresql/data
         networks:
             lms_network:
                 aliases:
                     - postgres_readers
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-            interval: 10s
+            # O 'pg_isready' é o comando padrão, mas adicionamos o -d readers_1
+            test: [ "CMD-SHELL", "pg_isready -U postgres -d readers_1" ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 30s # Crucial: Dá 30 segundos ao Postgres para criar os ficheiros iniciais no volume
 
 networks:
     lms_network:
