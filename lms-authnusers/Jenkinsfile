@@ -101,34 +101,41 @@ pipeline {
             }
         }
 
-      stage('Verify Strategies (Network Mesh)') {
+      stage('Verify Strategies (k6)') {
                 steps {
                     script {
-                        // 1. Descobrimos o nome exato (único) para garantir que testamos o GREEN
+                        // 1. Descobrimos o nome do container atual (ex: users-green-users-1)
                         def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
 
-                        echo "--- Validando versão específica: ${containerName} ---"
+                        echo "--- Validando Estratégias no container: ${containerName} ---"
 
-                        echo "--- Testando Dark Launch ---"
-                        sh """
-                            docker run --rm --network lms_network curlimages/curl:latest \
-                            -s -i -H 'X-LMS-Beta-Access: true' \
-                            http://${containerName}:8080/api/admin/users/new-feature | grep '200'
-                        """
-
-                        echo "--- Testando Kill Switch ---"
-                        withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
+                        // 2. Ativamos o Kill Switch antes de rodar o k6
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=true",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        ]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
+                            echo "Aguardando 10s para propagação da configuração..."
                             sleep 10
 
+                            // 3. Chamamos o k6 passando o TARGET_URL via variável de ambiente (-e)
+                            // Usamos a porta 8080 pois o k6 entra na rede 'lms_network'
                             sh """
-                                docker run --rm --network lms_network curlimages/curl:latest \
-                                -s -i http://${containerName}:8080/api/admin/users | grep '503'
+                                docker run --rm --network lms_network -i loadimpact/k6 run - < lms-authnusers/verify_strategies.js \
+                                -e TARGET_URL="http://${containerName}:8080"
                             """
                         }
 
-                        // Restaurar
-                        withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
+                        // 4. Restaurar para Kill Switch OFF para os estágios seguintes (Smoke Tests)
+                        echo "--- Restaurando Serviço (Kill Switch OFF) ---"
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=false",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        ]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                         }
                     }
