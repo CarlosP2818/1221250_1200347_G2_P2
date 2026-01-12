@@ -106,7 +106,7 @@ pipeline {
                 script {
                     echo "--- Testando Dark Launch ---"
 
-                    def betaRes = sh(script: "curl -s -o /dev/null -w '%{http_code}' -H 'X-LMS-Beta-Access: true' http://localhost:${env.NEXT_PORT}/api/admin/users/api/readers/new-feature", returnStdout: true).trim()
+                    def betaRes = sh(script: "curl -s -o /dev/null -w '%{http_code}' -H 'X-LMS-Beta-Access: true' http://localhost:${env.NEXT_PORT}/api/admin/users/new-feature", returnStdout: true).trim()
                     if (betaRes == "200") echo "Dark Launch: OK (Acesso autorizado com header)"
 
                     echo "--- Testando Kill Switch (Toggling Evidence) ---"
