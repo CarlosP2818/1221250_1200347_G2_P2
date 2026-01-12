@@ -26,6 +26,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
@@ -109,5 +110,13 @@ public class UserAdminApi {
 
 		final List<User> searchUsers = userService.searchUsers(request.getPage(), request.getQuery());
 		return new ListResponse<>(userViewMapper.toUserView(searchUsers));
+	}
+
+	@GetMapping("/api/readers/new-feature")
+	public ResponseEntity<?> newFeature(@RequestHeader(value = "X-LMS-Beta-Access", required = false) String secret) {
+		if ("true".equals(secret)) {
+			return ResponseEntity.ok("Bem-vindo à funcionalidade Beta!");
+		}
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 	}
 }
