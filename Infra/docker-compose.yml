@@ -11,8 +11,8 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"       # Porta pública para a API
-      - "8081:8080"   # Dashboard do Traefik (mudei para 8081 para não bater no teu serviço)
+      - "80:80"
+      - "8081:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
