@@ -20,7 +20,6 @@ export default function () {
     });
 
     // --- 2. Testar Kill Switch (esperando 503) ---
-    // Nota: Este teste assume que o Kill Switch foi ativado no Jenkins antes do k6 rodar
     const resKill = http.get(`${baseUrl}/api/admin/users`);
 
     check(resKill, {
