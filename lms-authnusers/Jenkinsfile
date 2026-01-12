@@ -103,40 +103,56 @@ pipeline {
             }
         }
 
-        stage('Remote Blue-Green Deploy') {
-            steps {
-                sshagent([env.SSH_CREDENTIALS_ID]) {
-                    script {
-                        dir('lms-authnusers') {
-                            def remoteDocker = "ssh://root@${env.VM_ADDRESS}"
+       stage('Remote Blue-Green Deploy') {
+           steps {
+               sshagent([env.SSH_CREDENTIALS_ID]) {
+                   script {
+                       dir('lms-authnusers') {
+                           // Definimos o host de destino
+                           def remoteDocker = "ssh://root@${env.VM_ADDRESS}"
 
-                            withEnv([
-                                "DOCKER_HOST=${remoteDocker}",
-                                "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
-                                "COLOR=${env.NEXT_COLOR}",
-                                "HOST_PORT=${env.NEXT_PORT}",
-                                // Adicionamos isto para o Jenkins não pedir confirmação de host
-                                "DOCKER_SSH_COMMAND=ssh -o StrictHostKeyChecking=no"
-                            ]) {
-                                echo "--- Fazendo Deploy Direto na VM ISEP (${env.NEXT_COLOR}) ---"
-                                sh "docker network create lms_network || true"
-                                sh "docker compose -p users-${env.NEXT_COLOR} up -d users"
+                           // Configuração robusta para SSH em automação
+                           def sshFlags = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-                                // Health Check
-                                timeout(time: 5, unit: 'MINUTES') {
-                                    waitUntil {
-                                        def containerId = sh(script: "docker compose -p users-${env.NEXT_COLOR} ps -q users", returnStdout: true).trim()
-                                        if (!containerId) return false
-                                        def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
-                                        return (health == "healthy")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                           withEnv([
+                               "DOCKER_HOST=${remoteDocker}",
+                               "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                               "COLOR=${env.NEXT_COLOR}",
+                               "HOST_PORT=${env.NEXT_PORT}",
+                               // IMPORTANTE: O Docker usa esta variável para passar argumentos ao SSH
+                               "DOCKER_SSH_COMMAND=ssh ${sshFlags}"
+                           ]) {
+                               echo "--- Verificando conexão com a VM: ${env.VM_ADDRESS} ---"
+                               // Teste rápido para garantir que o SSH está a funcionar antes do deploy
+                               sh "docker info"
+
+                               echo "--- Fazendo Deploy na VM ISEP (${env.NEXT_COLOR}) ---"
+                               sh "docker network create lms_network || true"
+
+                               // O docker compose vai usar as variáveis de ambiente acima
+                               sh "docker compose -p users-${env.NEXT_COLOR} up -d users"
+
+                               // Health Check
+                               echo "--- Aguardando Health Check ---"
+                               timeout(time: 5, unit: 'MINUTES') {
+                                   waitUntil {
+                                       try {
+                                           def containerId = sh(script: "docker compose -p users-${env.NEXT_COLOR} ps -q users", returnStdout: true).trim()
+                                           if (!containerId) return false
+                                           def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
+                                           return (health == "healthy")
+                                       } catch (Exception e) {
+                                           return false
+                                       }
+                                   }
+                               }
+                               echo "--- Deploy com sucesso! ---"
+                           }
+                       }
+                   }
+               }
+           }
+       }
 
       stage('Verify Strategies (k6)') {
                 steps {
