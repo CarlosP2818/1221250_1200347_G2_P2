@@ -124,7 +124,7 @@ pipeline {
                    sh """
                        curl -s -i -H "Authorization: Bearer ${token}" \
                             -H "X-LMS-Beta-Access: true" \
-                            http://localhost:30081/api/admin/users/api/readers/new-feature | grep "200"
+                            http://localhost:30081/api/admin/users/new-feature | grep "200"
                    """
 
                    echo "--- Testando Kill Switch (Toggling Evidence) ---"
