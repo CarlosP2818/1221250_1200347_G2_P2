@@ -101,36 +101,52 @@ pipeline {
             }
         }
 
-        stage('Security & Release Strategy Tests') {
-            steps {
-                script {
-                    echo "--- Testando Dark Launch ---"
-
-                    def betaRes = sh(script: "curl -s -o /dev/null -w '%{http_code}' -H 'X-LMS-Beta-Access: true' http://localhost:${env.NEXT_PORT}/api/admin/users/new-feature", returnStdout: true).trim()
-                    if (betaRes == "200") echo "Dark Launch: OK (Acesso autorizado com header)"
-
-                    echo "--- Testando Kill Switch (Toggling Evidence) ---"
-
-                    withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}"]) {
-                        sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
-                        sleep 5
+       stage('Verify Strategies with Auth') {
+           steps {
+               script {
+                   echo "--- Realizando Login para obter Token ---"
 
 
-                        def killRes = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${env.NEXT_PORT}/api/admin/users/1", returnStdout: true).trim()
-                        if (killRes == "503") {
-                            echo "Kill Switch: OK (Funcionalidade bloqueada com sucesso)"
-                        } else {
-                            error "Kill Switch FALHOU: Retornou ${killRes} em vez de 503"
-                        }
-                    }
+                   def token = sh(script: """
+                       curl -s -i -X POST http://localhost:30081/api/public/login \
+                       -H "Content-Type: application/json" \
+                       -d '{"username": "maria@gmail.com", "password": "Mariaroberta!123"}' | \
+                       grep -i 'Authorization:' | sed 's/Authorization: Bearer //I' | tr -d '\\r'
+                   """, returnStdout: true).trim()
+
+                   if (!token) {
+                       error "Falha ao obter o token. Verifica se o login foi bem sucedido."
+                   }
+
+                   echo "Token obtido com sucesso!"
+
+                   echo "--- Testando Dark Launch (Header Secreto) ---"
+                   sh """
+                       curl -s -i -H "Authorization: Bearer ${token}" \
+                            -H "X-LMS-Beta-Access: true" \
+                            http://localhost:30081/api/admin/users/api/readers/new-feature | grep "200"
+                   """
+
+                   echo "--- Testando Kill Switch (Toggling Evidence) ---"
+
+                   withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=green", "HOST_PORT=30081"]) {
+                       sh "docker compose -p users-green up -d --no-deps users"
+                       sleep 8
+
+                       echo "Validando 503 com Kill Switch Ativo..."
+                       sh """
+                           curl -s -i -H "Authorization: Bearer ${token}" \
+                                http://localhost:30081/api/admin/users | grep "503"
+                       """
+                   }
 
 
-                    withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}"]) {
-                        sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
-                    }
-                }
-            }
-        }
+                   withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=green", "HOST_PORT=30081"]) {
+                       sh "docker compose -p users-green up -d --no-deps users"
+                   }
+               }
+           }
+       }
 
         stage('Smoke Tests') {
             steps {
