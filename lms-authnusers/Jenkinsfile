@@ -1,33 +1,65 @@
 pipeline {
     agent any
-    tools { maven 'M3' }
+
+    tools {
+        maven 'M3'
+    }
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch a construir')
+    }
 
     environment {
         DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials'
         DOCKER_IMAGE_NAME = 'lms-authnusers'
         DOCKER_NAMESPACE = 'cralos062'
         IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
+        SSH_CREDENTIALS_ID = 'isep-vm-root'
         VM_ADDRESS = 'vs578.dei.isep.ipp.pt'
     }
 
     stages {
-        stage('Checkout & Build') {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+
+        stage('Build & Unit Tests') {
             steps {
-                checkout scm
-                dir('lms-authnusers') { sh 'mvn clean package -DskipTests' }
+                dir('lms-authnusers') { sh 'mvn clean test' }
             }
         }
 
-        stage('Build & Push Image') {
+        stage('Static Analysis & Mutation') {
+            parallel {
+                stage('SpotBbugs') {
+                    steps { dir('lms-authnusers') { sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs' } }
+                }
+                stage('Pitest') {
+                    steps { dir('lms-authnusers') { sh 'mvn org.pitest:pitest-maven:mutationCoverage' } }
+                }
+            }
+        }
+
+        stage('Package Artifact') {
+            steps {
+                dir('lms-authnusers') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: 'target/*.jar'
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
             steps {
                 dir('lms-authnusers') {
                     script {
                         def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                         env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+
                         docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
-                            def img = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
-                            img.push("${env.BUILD_TAG}")
-                            img.push("latest")
+                            def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+                            customImage.push("${env.BUILD_TAG}")
+                            customImage.push("latest")
                         }
                     }
                 }
@@ -38,21 +70,24 @@ pipeline {
             steps {
                 dir('lms-authnusers') {
                     script {
+                        // Detectar cor ativa
                         def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep users-green || true", returnStdout: true).trim()
                         env.ACTIVE_COLOR = isGreenActive ? "green" : "blue"
                         env.NEXT_COLOR = isGreenActive ? "blue" : "green"
                         env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "30080" : "30081"
 
-                        echo "--- Subindo ${env.NEXT_COLOR} com PESO 0 (Sem tráfego público) ---"
+                        echo "Ativo: ${env.ACTIVE_COLOR} | Deploying Canary: ${env.NEXT_COLOR} com Peso 0"
 
                         withEnv([
                             "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
                             "COLOR=${env.NEXT_COLOR}",
                             "HOST_PORT=${env.NEXT_PORT}",
-                            "WEIGHT=0"
+                            "WEIGHT=0" // Nova versão entra sem tráfego público
                         ]) {
+                            sh "docker network create lms_network || true"
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d"
 
+                            echo "--- Health Check da nova versão (${env.NEXT_COLOR}) ---"
                             timeout(time: 5, unit: 'MINUTES') {
                                 waitUntil {
                                     def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' users-${env.NEXT_COLOR}", returnStdout: true).trim()
@@ -65,50 +100,83 @@ pipeline {
             }
         }
 
-        stage('Verify Canary (k6)') {
+        stage('Verify Strategies (k6)') {
             steps {
                 dir('lms-authnusers') {
                     script {
-                        // Teste direto no IP/Porta do container novo (ignora o Traefik)
-                        sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://users-${env.NEXT_COLOR}:8080'"
-                    }
-                }
-            }
-        }
+                        def containerName = "users-${env.NEXT_COLOR}"
+                        echo "--- Validando Canary no container: ${containerName} ---"
 
-        stage('Manual Approval & Traffic Switch') {
-            steps {
-                input message: "Promover ${env.NEXT_COLOR} para 100% do tráfego?", ok: "Switch Now"
-                script {
-                    dir('lms-authnusers') {
-                        echo "--- Switch: ${env.NEXT_COLOR} (100%) | ${env.ACTIVE_COLOR} (0%) ---"
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=true",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "WEIGHT=0",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        ]) {
+                            sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
+                            sleep 10
+                            // k6 testa diretamente o container via rede interna
+                            sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://${containerName}:8080'"
+                        }
 
-                        // Ativa o novo
-                        withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=100"]) {
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=false",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "WEIGHT=0",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        ]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                         }
+                    }
+                }
+            }
+        }
 
-                        // Desativa tráfego no antigo (opcional, mas recomendado antes do cleanup)
-                        withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest", "COLOR=${env.ACTIVE_COLOR}", "HOST_PORT=${env.ACTIVE_COLOR == 'blue' ? '30080' : '30081'}", "WEIGHT=0"]) {
-                            sh "docker compose -p users-${env.ACTIVE_COLOR} up -d --no-deps users"
+        stage('Manual Approval & Switch') {
+            steps {
+                input message: "Canary ${env.NEXT_COLOR} validado. Deseja promover para 100% do tráfego?", ok: "Promover"
+
+                script {
+                    dir('lms-authnusers') {
+                        echo "--- Promovendo ${env.NEXT_COLOR} para Peso 100 ---"
+                        withEnv([
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "WEIGHT=100"
+                        ]) {
+                            sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                         }
                     }
                 }
             }
         }
 
-        stage('Final Smoke Tests') {
+        stage('Smoke Tests') {
             steps {
                 dir('lms-authnusers') {
-                    // Teste via Traefik (porta 80) para garantir que o utilizador final está OK
-                    sh "docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js -e AUTH_URL='http://localhost/api/users/public/login'"
+                    script {
+                        echo "--- Smoke Tests via Traefik (Porta 80) ---"
+                        // Testamos através do Traefik para garantir que o roteamento de 100% funciona
+                        sh """
+                            docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js \
+                            -e AUTH_URL="http://localhost/api/users/public/login"
+                        """
+                    }
                 }
             }
         }
 
         stage('Cleanup Old Version') {
             steps {
-                sh "docker compose -p users-${env.ACTIVE_COLOR} down || true"
+                script {
+                    echo "--- Sucesso! Removendo versão antiga: ${env.ACTIVE_COLOR} ---"
+                    dir('lms-authnusers') {
+                        sh "docker compose -p users-${env.ACTIVE_COLOR} down || true"
+                    }
+                }
             }
         }
     }
@@ -116,9 +184,12 @@ pipeline {
     post {
         failure {
             script {
-                echo "Rollback: Removendo tentativa falhada de ${env.NEXT_COLOR}"
-                sh "docker compose -p users-${env.NEXT_COLOR} down || true"
+                echo "--- Falha no Canary. Removendo ${env.NEXT_COLOR} ---"
+                dir('lms-authnusers') {
+                    sh "docker compose -p users-${env.NEXT_COLOR} down || true"
+                }
             }
         }
+        always { cleanWs() }
     }
 }
