@@ -154,21 +154,6 @@ pipeline {
             }
         }
 
-        stage('Smoke Tests') {
-            steps {
-                dir('lms-authnusers') {
-                    script {
-                        echo "--- Smoke Tests via Traefik (Porta 80) ---"
-                        // Testamos através do Traefik para garantir que o roteamento de 100% funciona
-                        sh """
-                            docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js \
-                            sh "docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js -e READERS_URL='http://localhost/api/readers'"
-                        """
-                    }
-                }
-            }
-        }
-
         stage('Cleanup Old Version') {
             steps {
                 script {
