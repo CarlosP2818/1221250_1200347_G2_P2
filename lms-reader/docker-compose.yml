@@ -38,7 +38,7 @@ services:
             POSTGRES_PASSWORD: password
             POSTGRES_DB: readers_1
         volumes:
-            - postgres_readers_volume:/var/lib/postgresql/data
+            - postgres_readers_volume:/var/lib/postgresql
         networks:
             lms_network:
                 aliases:
