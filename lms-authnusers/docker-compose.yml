@@ -2,10 +2,10 @@ version: "3.9"
 
 services:
     users:
-        image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
-        # container_name removido para não haver conflito durante o swap Blue/Green
+        image: ${DOCKER_IMAGE}
+        container_name: users-${COLOR}
         ports:
-            - "${HOST_PORT:-8080}:8080"
+            - "${HOST_PORT}:8080"
         depends_on:
             postgres_users:
                 condition: service_healthy
@@ -20,30 +20,37 @@ services:
         networks:
             lms_network:
                 aliases:
-                    - users-service # O Readers usa este nome para comunicar
+                    - users-service
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.users-${COLOR:-blue}.rule=PathPrefix(`/api/users`)"
-            - "traefik.http.services.users-${COLOR:-blue}.loadbalancer.server.port=8080"
+            # Router único por cor para evitar conflitos de nomes no Traefik
+            - "traefik.http.routers.users-${COLOR}.rule=PathPrefix(`/api/users`)"
+            - "traefik.http.routers.users-${COLOR}.entrypoints=web"
+            # AMBOS os routers (Blue e Green) apontam para o MESMO serviço de Load Balancer
+            - "traefik.http.routers.users-${COLOR}.service=users-canary-service"
+
+            # Configuração de Pesos (Canary)
+            - "traefik.http.services.users-canary-service.loadbalancer.weighted.services.users-${COLOR}-backend@docker"
+            - "traefik.http.services.users-canary-service.loadbalancer.services.users-${COLOR}-backend@docker.weight=${WEIGHT:-0}"
+            - "traefik.http.services.users-${COLOR}-backend@docker.loadbalancer.server.port=8080"
+
         healthcheck:
-            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+            test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
             interval: 10s
             timeout: 5s
             retries: 5
             start_period: 40s
-        deploy:
-            update_config:
-                order: start-first
 
     postgres_users:
         image: postgres:18
+        container_name: postgres-users-${COLOR}
         restart: unless-stopped
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
             POSTGRES_DB: users_1
         volumes:
-            - postgres_users_volume:/var/lib/postgresql
+            - postgres_users_volume_${COLOR}:/var/lib/postgresql
         networks:
             lms_network:
                 aliases:
@@ -57,4 +64,5 @@ networks:
         external: true
 
 volumes:
-    postgres_users_volume:
+    postgres_users_volume_blue:
+    postgres_users_volume_green:
