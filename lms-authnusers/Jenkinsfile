@@ -104,38 +104,30 @@ pipeline {
       stage('Verify Strategies (Network Mesh)') {
                 steps {
                     script {
-                        // Procura o nome exato do container (ex: users-green-users-1)
+                        // 1. Descobrimos o nome exato (único) para garantir que testamos o GREEN
                         def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
 
-                        if (!containerName) {
-                            error "Não foi possível encontrar o container users-${env.NEXT_COLOR}"
-                        }
+                        echo "--- Validando versão específica: ${containerName} ---"
 
-                        echo "--- Testando contra o container: ${containerName} na porta 8080 ---"
-
-                        echo "--- Testando Dark Launch (Header Secreto) ---"
-                        // Link corrigido para coincidir com o mapeamento do teu Java Controller
+                        echo "--- Testando Dark Launch ---"
                         sh """
                             docker run --rm --network lms_network curlimages/curl:latest \
                             -s -i -H 'X-LMS-Beta-Access: true' \
                             http://${containerName}:8080/api/admin/users/new-feature | grep '200'
                         """
 
-                        echo "--- Testando Kill Switch (Toggling Evidence) ---"
+                        echo "--- Testando Kill Switch ---"
                         withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
-                            echo "Aguardando 10 segundos para o Kill Switch propagar..."
                             sleep 10
 
-                            // Testamos o endpoint base que deve retornar 503
                             sh """
                                 docker run --rm --network lms_network curlimages/curl:latest \
                                 -s -i http://${containerName}:8080/api/admin/users | grep '503'
                             """
                         }
 
-                        // Restaurar para a versão funcional (Kill Switch OFF)
-                        echo "--- Restaurando funcionalidade (Kill Switch OFF) ---"
+                        // Restaurar
                         withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
                             sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                         }
