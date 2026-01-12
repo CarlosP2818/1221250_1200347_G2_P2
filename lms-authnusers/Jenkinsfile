@@ -162,7 +162,7 @@ pipeline {
                         // Testamos através do Traefik para garantir que o roteamento de 100% funciona
                         sh """
                             docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js \
-                            -e AUTH_URL="http://localhost:${env.NEXT_PORT}/api/public/login"
+                            sh "docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js -e READERS_URL='http://localhost/api/readers'"
                         """
                     }
                 }
