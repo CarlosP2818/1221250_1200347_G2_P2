@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,11 +38,19 @@ public class AuthorController {
     private final FileStorageService fileStorageService;
     private final ConcurrencyService concurrencyService;
 
+    @Value("${feature.maintenance.killswitch}")
+    private boolean isKilled;
+
     // Create
     @Operation(summary = "Creates a new Author")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<AuthorView> create(@Valid CreateAuthorRequest resource) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         //Guarantee that the client doesn't provide a link on the body, null = no photo or error
         resource.setPhotoURI(null);
         MultipartFile file = resource.getPhoto();
@@ -70,6 +79,11 @@ public class AuthorController {
             WebRequest request,
             @Valid UpdateAuthorRequest updateRequest
     ) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         String ifMatch = request.getHeader(ConcurrencyService.IF_MATCH);
         if (ifMatch == null || ifMatch.isEmpty() || ifMatch.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -94,6 +108,11 @@ public class AuthorController {
     public ResponseEntity<AuthorView> findByAuthorNumber(
             @PathVariable("authorNumber") @Parameter(description = "The number of the Author to find") final String authorNumber) {
 
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
+
         final var author = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException(Author.class, authorNumber));
 
@@ -103,6 +122,10 @@ public class AuthorController {
     @Operation(summary = "Search authors by name")
     @GetMapping
     public ListResponse<AuthorView> findByName(@RequestParam("name") final String name) {
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         final var authors = authorService.findByName(name);
         return new ListResponse<>(authorViewMapper.toAuthorView(authors));
@@ -115,6 +138,11 @@ public class AuthorController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<byte[]> getSpecificAuthorPhoto(
             @PathVariable("authorNumber") @Parameter(description = "The number of the Author to find") final String authorNumber) {
+
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         Author authorDetails = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException(Author.class, authorNumber));
@@ -141,6 +169,11 @@ public class AuthorController {
     @Operation(summary = "Deletes a author photo")
     @DeleteMapping("/{authorNumber}/photo")
     public ResponseEntity<Void> deleteBookPhoto(@PathVariable("authorNumber") final String authorNumber) {
+
+
+        if (isKilled) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Funcionalidade desativada");
+        }
 
         Author author = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new AccessDeniedException("Author not found"));
