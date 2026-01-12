@@ -14,8 +14,6 @@ pipeline {
         DOCKER_IMAGE_NAME = 'lms-readers'
         DOCKER_NAMESPACE = 'cralos062'
         IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
-        SSH_CREDENTIALS_ID = 'isep-vm-root'
-        VM_ADDRESS = 'vs578.dei.isep.ipp.pt'
     }
 
     stages {
@@ -66,33 +64,32 @@ pipeline {
             }
         }
 
-        stage('Canary Deploy (Weight 0)') {
+        stage('Blue-Green Deploy') {
             steps {
                 dir('lms-reader') {
                     script {
-                        // Detectar cor ativa para Readers
                         def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep readers-green || true", returnStdout: true).trim()
                         env.ACTIVE_COLOR = isGreenActive ? "green" : "blue"
                         env.NEXT_COLOR = isGreenActive ? "blue" : "green"
-                        // Portas diferentes do Users (3009x em vez de 3008x)
                         env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "30090" : "30091"
 
-                        echo "Ativo: ${env.ACTIVE_COLOR} | Deploying Canary Readers: ${env.NEXT_COLOR} com Peso 0"
+                        echo "Ativo: ${env.ACTIVE_COLOR} | Deploying Readers: ${env.NEXT_COLOR} na porta ${env.NEXT_PORT}"
 
                         withEnv([
                             "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
                             "COLOR=${env.NEXT_COLOR}",
                             "HOST_PORT=${env.NEXT_PORT}",
-                            "WEIGHT=0"
+                            "WEIGHT=0" // Entra com peso 0 no Traefik inicialmente
                         ]) {
                             sh "docker network create lms_network || true"
-                            sh "docker compose -p readers-${env.NEXT_COLOR} up -d"
+                            sh "docker compose -p readers-${env.NEXT_COLOR} up -d readers"
 
                             echo "--- Health Check da nova versão (${env.NEXT_COLOR}) ---"
                             timeout(time: 5, unit: 'MINUTES') {
                                 waitUntil {
-                                    // Nota: o container name no compose deve bater com readers-${env.NEXT_COLOR}
-                                    def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' readers-${env.NEXT_COLOR}", returnStdout: true).trim()
+                                    def containerId = sh(script: "docker compose -p readers-${env.NEXT_COLOR} ps -q readers", returnStdout: true).trim()
+                                    if (!containerId) return false
+                                    def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
                                     return (health == "healthy")
                                 }
                             }
@@ -102,13 +99,46 @@ pipeline {
             }
         }
 
+        stage('Verify Strategies (k6)') {
+            steps {
+                dir('lms-reader') {
+                    script {
+                        def containerName = sh(script: "docker ps --filter 'name=readers-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
+                        echo "--- Validando Estratégias Readers no container: ${containerName} ---"
+
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=true",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                            "WEIGHT=0"
+                        ]) {
+                            sh "docker compose -p readers-${env.NEXT_COLOR} up -d --no-deps readers"
+                            sleep 10
+                            // Porta 8090 interna do Readers
+                            sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://${containerName}:8090'"
+                        }
+
+                        echo "--- Restaurando Kill Switch OFF ---"
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=false",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                            "WEIGHT=0"
+                        ]) {
+                            sh "docker compose -p readers-${env.NEXT_COLOR} up -d --no-deps readers"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Manual Approval & Switch') {
             steps {
-                input message: "Canary Readers ${env.NEXT_COLOR} validado. Deseja promover para 100% do tráfego?", ok: "Promover"
-
+                input message: "Readers ${env.NEXT_COLOR} validado. Deseja promover para 100%?", ok: "Promover"
                 script {
                     dir('lms-reader') {
-                        echo "--- Promovendo Readers ${env.NEXT_COLOR} para Peso 100 ---"
                         withEnv([
                             "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
                             "COLOR=${env.NEXT_COLOR}",
@@ -122,10 +152,21 @@ pipeline {
             }
         }
 
+        stage('Smoke Tests') {
+            steps {
+                dir('lms-reader') {
+                    script {
+                        echo "--- Smoke Tests na porta ${env.NEXT_PORT} ---"
+                        sh "docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js -e READERS_URL='http://localhost:${env.NEXT_PORT}/api/readers'"
+                    }
+                }
+            }
+        }
+
         stage('Cleanup Old Version') {
             steps {
                 script {
-                    echo "--- Sucesso! Removendo versão antiga: ${env.ACTIVE_COLOR} ---"
+                    echo "--- Removendo versão antiga: ${env.ACTIVE_COLOR} ---"
                     dir('lms-reader') {
                         sh "docker compose -p readers-${env.ACTIVE_COLOR} down || true"
                     }
@@ -137,10 +178,7 @@ pipeline {
     post {
         failure {
             script {
-                echo "--- Falha no Canary Readers. Removendo ${env.NEXT_COLOR} ---"
-                dir('lms-reader') {
-                    sh "docker compose -p readers-${env.NEXT_COLOR} down || true"
-                }
+                dir('lms-reader') { sh "docker compose -p readers-${env.NEXT_COLOR} down || true" }
             }
         }
         always { cleanWs() }

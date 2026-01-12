@@ -2,10 +2,9 @@ version: "3.9"
 
 services:
     readers:
-        image: ${DOCKER_IMAGE}
-        container_name: readers-${COLOR}
+        image: ${DOCKER_IMAGE:-cralos062/lms-readers:latest}
         ports:
-            - "${HOST_PORT}:8090"
+            - "${HOST_PORT:-8090}:8090"
         depends_on:
             postgres_readers:
                 condition: service_healthy
@@ -16,46 +15,38 @@ services:
             SPRING_DATASOURCE_PASSWORD: password
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
+            FEATURE_MAINTENANCE_KILLSWITCH: ${KILLSWITCH_ACTIVE:-false}
         networks:
             lms_network:
                 aliases:
                     - readers-service
         labels:
             - "traefik.enable=true"
+            - "traefik.http.routers.readers-${COLOR:-blue}-router.rule=PathPrefix(`/api/readers`)"
+            - "traefik.http.routers.readers-${COLOR:-blue}-router.entrypoints=web"
+            - "traefik.http.routers.readers-${COLOR:-blue}-router.service=readers-canary-service"
 
-            # 1. Roteamento: Router exclusivo para esta cor
-            - "traefik.http.routers.readers-${COLOR}-router.rule=PathPrefix(`/api/readers`)"
-            - "traefik.http.routers.readers-${COLOR}-router.entrypoints=web"
-
-            # 2. Vinculação ao Serviço de Canary comum
-            - "traefik.http.routers.readers-${COLOR}-router.service=readers-canary-service"
-
-            # 3. Definição do Load Balancer Weighted (Canary)
-            - "traefik.http.services.readers-canary-service.loadbalancer.weighted.services.readers-${COLOR}-backend@docker"
-            - "traefik.http.services.readers-canary-service.loadbalancer.services.readers-${COLOR}-backend@docker.weight=${WEIGHT:-0}"
-
-            # 4. Backend real deste container
-            - "traefik.http.services.readers-${COLOR}-backend@docker.loadbalancer.server.port=8090"
+            # Load Balancer com Pesos
+            - "traefik.http.services.readers-canary-service.loadbalancer.weighted.services.readers-${COLOR:-blue}-backend@docker"
+            - "traefik.http.services.readers-canary-service.loadbalancer.services.readers-${COLOR:-blue}-backend@docker.weight=${WEIGHT:-0}"
+            - "traefik.http.services.readers-${COLOR:-blue}-backend@docker.loadbalancer.server.port=8090"
 
         healthcheck:
-            # O Traefik precisa que o status seja HEALTHY para ativar a rota
             test: [ "CMD", "curl", "-f", "http://localhost:8090/actuator/health" ]
-            interval: 20s
-            timeout: 10s
+            interval: 10s
+            timeout: 5s
             retries: 5
-            start_period: 60s
+            start_period: 40s
 
     postgres_readers:
-        container_name: postgres-readers-${COLOR}
         image: postgres:18
-        restart: always
+        restart: unless-stopped
         environment:
-            POSTGRES_DB: readers_1
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
+            POSTGRES_DB: readers_1
         volumes:
-            # Correção no path interno do volume para garantir persistência
-            - postgres_readers_volume_${COLOR}:/var/lib/postgresql/data
+            - postgres_readers_volume_${COLOR:-blue}:/var/lib/postgresql/data
         networks:
             lms_network:
                 aliases:
