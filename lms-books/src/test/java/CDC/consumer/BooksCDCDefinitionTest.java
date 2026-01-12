@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.boot.test.mock.mockito.MockBean;
-import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
+import pt.psoft.g1.psoftg1.bookmanagement.services.command.BookCommandService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +26,7 @@ import java.util.Map;
 public class BooksCDCDefinitionTest {
 
   @MockBean
-  BookService bookService;
+  BookCommandService bookService;
 
   @Pact(consumer = "book_created-consumer")
   V4Pact createBookCreatedPact(MessagePactBuilder builder) {

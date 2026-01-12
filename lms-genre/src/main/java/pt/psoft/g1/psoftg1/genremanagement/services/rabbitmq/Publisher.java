@@ -23,6 +23,6 @@ public class Publisher {
                 correlationId
         );
 
-        rabbitTemplate.convertAndSend(genreExchange.getName(), "author.create", event);
+        rabbitTemplate.convertAndSend(genreExchange.getName(), "author.created", event);
     }
 }

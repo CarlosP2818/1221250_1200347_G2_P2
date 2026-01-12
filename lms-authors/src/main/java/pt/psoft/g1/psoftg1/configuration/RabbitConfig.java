@@ -18,6 +18,11 @@ public  class RabbitConfig {
     @Bean
     public DirectExchange authorExchange() { return new DirectExchange("author.events.exchange"); }
 
+    @Bean
+    public Queue authorQueue() {
+        return new Queue("author.created.queue", true); // Esta é a fila real
+    }
+
 
     @Bean
     public DirectExchange bookAuthorRepliesExchange() {
@@ -37,6 +42,16 @@ public  class RabbitConfig {
         return BindingBuilder.bind(queue)
                 .to(bookAuthorRepliesExchange)
                 .with("author.reply");
+    }
+
+    @Bean
+    public Binding authorQueueBinding(
+            DirectExchange authorExchange,
+            @Qualifier("authorQueue") Queue queue
+    ) {
+        return BindingBuilder.bind(queue)
+                .to(authorExchange)
+                .with("author.created");
     }
 
     @Bean

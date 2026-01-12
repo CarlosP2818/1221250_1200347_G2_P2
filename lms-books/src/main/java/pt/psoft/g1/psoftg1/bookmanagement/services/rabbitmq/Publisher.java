@@ -2,7 +2,7 @@ package pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
-import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
+import pt.psoft.g1.psoftg1.bookmanagement.services.dto.CreateBookRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.AuthorBookEvent;
 import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.GenreCreatedEvent;
 

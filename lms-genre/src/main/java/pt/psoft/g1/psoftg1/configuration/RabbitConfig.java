@@ -16,7 +16,10 @@ import org.springframework.context.annotation.Configuration;
 public  class RabbitConfig {
 
     @Bean
-    public DirectExchange genreExchange() { return new DirectExchange("genre.exchange"); }
+    public DirectExchange genreExchange() { return new DirectExchange("genre.events.exchange"); }
+
+    @Bean
+    public Queue genreQueue() { return new Queue("genre.created.queue", true); }
 
     @Bean
     public DirectExchange bookGenreRepliesExchange() {
@@ -26,6 +29,26 @@ public  class RabbitConfig {
     @Bean
     public Queue genreBookReplyQueue() {
         return new Queue("genre.book.reply.queue", true);
+    }
+
+    @Bean
+    public Binding genreBookReplyBinding(
+            DirectExchange bookGenreRepliesExchange,
+            @Qualifier("genreBookReplyQueue") Queue queue
+    ) {
+        return BindingBuilder.bind(queue)
+                .to(bookGenreRepliesExchange)
+                .with("genre.reply"); // routing key usada no send do listener
+    }
+
+    @Bean
+    public Binding genreQueueBinding(
+            DirectExchange genreExchange,
+            @Qualifier("genreQueue") Queue queue
+    ) {
+        return BindingBuilder.bind(queue)
+                .to(genreExchange)
+                .with("genre.created"); // routing key
     }
 
     @Bean

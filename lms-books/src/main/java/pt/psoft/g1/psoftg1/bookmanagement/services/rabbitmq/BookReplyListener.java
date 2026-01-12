@@ -4,10 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
-import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.OutboxRepositoryMongoImpl;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.OutboxEventRepository;
-import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
-import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
+import pt.psoft.g1.psoftg1.bookmanagement.services.command.BookCommandService;
+import pt.psoft.g1.psoftg1.bookmanagement.services.dto.CreateBookRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.AuthorFoundReply;
 import pt.psoft.g1.psoftg1.bookmanagement.services.rabbitmq.events.GenreFoundReply;
 
@@ -20,7 +19,7 @@ public class BookReplyListener {
 
     // Cache em memória para guardar o progresso da Saga
     private final Map<String, CreateBookRequest> pendingBooks = new ConcurrentHashMap<>();
-    private final BookService bookService;
+    private final BookCommandService bookCommandService;
     private final RabbitTemplate rabbitTemplate; // Injeta isto no construtor
     private final OutboxEventRepository outboxRepository;
 
@@ -30,31 +29,31 @@ public class BookReplyListener {
 
     @RabbitListener(queues = "author.book.reply.queue")
     public void handleAuthorReply(AuthorFoundReply reply) {
-        System.out.println("BOOKS: Recebi resposta do Author! ID: " + reply.authors());
+        if (reply == null || reply.correlationId() == null) return;
+
         String correlationId = reply.correlationId();
         CreateBookRequest request = pendingBooks.get(correlationId);
 
         if (request != null) {
-            // Atualiza o pedido com o ID técnico que veio do microserviço de Autores
             request.setAuthors(reply.authors());
             tryCreateBookIfReady(request, correlationId);
-        } else {
-            System.err.println("BOOKS: Erro - Pedido não encontrado para ID: " + correlationId);
         }
     }
 
     @RabbitListener(queues = "genre.book.reply.queue")
     public void handleGenreReply(GenreFoundReply reply) {
-        System.out.println("BOOKS: Recebi resposta do Genre! ID: " + reply.genreName());
+        if (reply == null || reply.correlationId() == null) return;
+
+        System.out.println("BOOKS: Recebi resposta do Genre! Nome: " + reply.genreName());
         String correlationId = reply.correlationId();
+
         CreateBookRequest request = pendingBooks.get(correlationId);
 
         if (request != null) {
-            // Atualiza o pedido com o ID técnico que veio do microserviço de Géneros
             request.setGenreName(reply.genreName());
             tryCreateBookIfReady(request, correlationId);
         } else {
-            System.err.println("BOOKS: Erro - Pedido não encontrado para ID: " + correlationId);
+            System.err.println("BOOKS: Request não encontrado no Map para ID: " + correlationId);
         }
     }
 
@@ -67,7 +66,7 @@ public class BookReplyListener {
 
             java.util.concurrent.CompletableFuture.runAsync(() -> {
                 try {
-                    bookService.create(request);
+                    bookCommandService.create(request);
                     System.out.println("BOOKS: SUCESSO! Livro criado com ISBN da Google API.");
 
                     outboxRepository.findByCorrelationId(correlationId).ifPresent(event -> {

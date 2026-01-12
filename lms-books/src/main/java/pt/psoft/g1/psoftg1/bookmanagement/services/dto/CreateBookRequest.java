@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.bookmanagement.services;
+package pt.psoft.g1.psoftg1.bookmanagement.services.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
+import pt.psoft.g1.psoftg1.bookmanagement.services.AuthorInnerRequest;
 
 import java.util.List;
 

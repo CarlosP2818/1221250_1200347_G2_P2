@@ -1,44 +1,42 @@
-package pt.psoft.g1.psoftg1.bookmanagement.services;
+package pt.psoft.g1.psoftg1.bookmanagement.services.command;
 
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQP;
 import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.persistence.mongo.OutboxEventMongo;
-import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.BookMongoMapper;
-import pt.psoft.g1.psoftg1.bookmanagement.model.*;
-import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
-import lombok.RequiredArgsConstructor;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.command.BookCommandRepository;
+import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
+import pt.psoft.g1.psoftg1.bookmanagement.model.Description;
+import pt.psoft.g1.psoftg1.bookmanagement.model.Isbn;
+import pt.psoft.g1.psoftg1.bookmanagement.model.Title;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.OutboxEventRepository;
+import pt.psoft.g1.psoftg1.bookmanagement.services.AuthorInnerRequest;
+import pt.psoft.g1.psoftg1.bookmanagement.services.query.BookQueryService;
+import pt.psoft.g1.psoftg1.bookmanagement.services.dto.CreateBookRequest;
+import pt.psoft.g1.psoftg1.bookmanagement.services.dto.UpdateBookRequest;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.external.service.BookIsbnGateway;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
-import pt.psoft.g1.psoftg1.shared.services.Page;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class BookServiceImpl implements BookService {
+public class BookCommandServiceImpl implements BookCommandService {
 
-    private final BookRepository bookRepository;
+    private final BookCommandRepository bookCommandRepository;
     private final PhotoRepository photoRepository;
     private final BookIsbnGateway isbnGateway;
-    private final BookMongoMapper bookMongoMapper;
 
     private final OutboxEventRepository outboxRepository;
-
-    @Value("${suggestionsLimitPerGenre}")
-    private long suggestionsLimitPerGenre;
+    private final BookQueryService bookQueryService;
 
     @Override
     @Transactional
@@ -48,8 +46,10 @@ public class BookServiceImpl implements BookService {
         String isbn = isbnGateway.getIsbnByTitle(request.getTitle())
                 .orElseThrow(() -> new NotFoundException("ISBN not found for the given title"));
 
-        if(bookRepository.findByIsbn(isbn).isPresent()){
+        try {
+            bookQueryService.findByIsbn(isbn);
             throw new ConflictException("Book with ISBN " + isbn + " already exists");
+        } catch (NotFoundException e) {
         }
 
         List<String> authorsNames = request.getAuthors().stream()
@@ -65,18 +65,17 @@ public class BookServiceImpl implements BookService {
                 request.getPhotoURI()
         );
 
-        bookRepository.save(newBook);
+        bookCommandRepository.save(newBook);
 
         return newBook;
     }
-
 
     @Override
     @Transactional
     @CacheEvict(value = "books", key = "#request.isbn")
     public Book update(UpdateBookRequest request, Long currentVersion) {
 
-        Book book = findByIsbn(request.getIsbn());
+        Book book = bookQueryService.findByIsbn(request.getIsbn());
 
         if (request.getAuthorsIds() != null) {
             book.setAuthorsIds(request.getAuthorsIds());
@@ -102,12 +101,12 @@ public class BookServiceImpl implements BookService {
             book.setPhoto(photoURI);
         }
 
-        return bookRepository.save(book);
+        return bookCommandRepository.save(book);
     }
 
     @Override
     public Book save(Book book) {
-        return this.bookRepository.save(book);
+        return this.bookCommandRepository.save(book);
     }
 
     @Override
@@ -131,7 +130,7 @@ public class BookServiceImpl implements BookService {
     @Transactional
     @CacheEvict(value = "books", key = "#isbn")
     public Book removeBookPhoto(String isbn, long desiredVersion) {
-        Book book = findByIsbn(isbn);
+        Book book = bookQueryService.findByIsbn(isbn);
 
         String photoFile = book.getPhoto().getPhotoFile();
         if (photoFile == null) {
@@ -139,64 +138,10 @@ public class BookServiceImpl implements BookService {
         }
 
         book.setPhoto(null);
-        var updatedBook = bookRepository.save(book);
+        var updatedBook = bookCommandRepository.save(book);
         photoRepository.deleteByPhotoFile(photoFile);
 
         return updatedBook;
-    }
-
-    @Override
-    @Cacheable(value = "books", key = "#isbn")
-    public Book findByIsbn(String isbn) {
-        return bookRepository.findByIsbn(isbn)
-                .orElseThrow(() -> new NotFoundException(Book.class, isbn));
-    }
-
-    public List<Book> getBooksSuggestionsForReader(List<String> genreIds) {
-        List<Book> books = new ArrayList<>();
-
-        for (String genreId : genreIds) {
-            List<Book> tempBooks = bookRepository.findByGenreId(genreId);
-            if (tempBooks.isEmpty()) continue;
-
-            long genreBookCount = 0;
-            for (Book loopBook : tempBooks) {
-                if (genreBookCount >= suggestionsLimitPerGenre) break;
-                books.add(loopBook);
-                genreBookCount++;
-            }
-        }
-
-        return books;
-    }
-
-    @Override
-    public List<Book> searchBooks(Page page, SearchBooksQuery query) {
-        if (page == null) {
-            page = new Page(1, 10);
-        }
-        if (query == null) {
-            query = new SearchBooksQuery("", "", "");
-        }
-        return bookRepository.searchBooks(page, query);
-    }
-
-    @Override
-    @Cacheable(value = "booksByGenre", key = "#genre")
-    public List<Book> findByGenre(String genre) {
-        return bookRepository.findByGenreId(genre);
-    }
-
-    @Override
-    @Cacheable(value = "booksByTitle", key = "#title")
-    public List<Book> findByTitle(String title) {
-        return bookRepository.findByTitle(title);
-    }
-
-    @Override
-    @Cacheable(value = "booksByAuthor", key = "#authorName")
-    public List<Book> findByAuthorsIds(List<String> authorsIds) {
-        return bookRepository.findByAuthorIds(authorsIds);
     }
 
     @Override
@@ -211,6 +156,5 @@ public class BookServiceImpl implements BookService {
         );
         return this.update(request, bookViewAMQP.getVersion());
     }
-
 
 }

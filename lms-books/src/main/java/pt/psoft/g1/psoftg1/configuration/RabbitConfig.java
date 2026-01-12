@@ -14,6 +14,11 @@ import org.springframework.context.annotation.Primary;
 public  class RabbitConfig {
 
     @Bean
+    public DirectExchange authorExchange() {
+        return new DirectExchange("author.events.exchange");
+    }
+
+    @Bean
     public DirectExchange bookExchange() {
         return new DirectExchange("book.events.exchange");
     }
@@ -31,12 +36,12 @@ public  class RabbitConfig {
     // -------------------- Queues --------------------
     @Bean
     public Queue authorReplyQueue() {
-        return new Queue("author.reply.queue", true); // true = durable
+        return new Queue("author.book.reply.queue", true); // true = durable
     }
 
     @Bean
     public Queue genreReplyQueue() {
-        return new Queue("genre.reply.queue", true);
+        return new Queue("genre.book.reply.queue", true);
     }
 
     @Bean

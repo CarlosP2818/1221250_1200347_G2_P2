@@ -8,11 +8,13 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import pt.psoft.g1.psoftg1.bookmanagement.api.query.BookQueryController;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.command.BookCommandRepository;
+import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.repositories.impl.mongo.query.BookQueryRepository;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Description;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Isbn;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Title;
-import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
 
 import java.util.List;
 
@@ -23,7 +25,8 @@ import java.util.List;
 @Order(2)
 public class Bootstrapper implements CommandLineRunner {
 
-    private final BookRepository bookRepository;
+    private final BookCommandRepository bookCommandRepository;
+    private final BookQueryRepository bookQueryRepository;
 
     @Value("${lendingDurationInDays}")
     private int lendingDurationInDays;
@@ -40,7 +43,7 @@ public class Bootstrapper implements CommandLineRunner {
     private void createBooks() {
 
         // 1. O País das Pessoas de Pernas Para o Ar
-        if (bookRepository.findByIsbn("9789720706386").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789720706386").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789720706386"),
                     new Title("O País das Pessoas de Pernas Para o Ar"),
@@ -49,11 +52,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("1"), // Id dos autores (hardcoded)
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 2. Como se Desenha Uma Casa
-        if (bookRepository.findByIsbn("9789723716160").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789723716160").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789723716160"),
                     new Title("Como se Desenha Uma Casa"),
@@ -62,11 +65,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("2"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 3. C e Algoritmos
-        if (bookRepository.findByIsbn("9789895612864").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789895612864").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789895612864"),
                     new Title("C e Algoritmos"),
@@ -75,11 +78,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("3"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 4. Introdução ao Desenvolvimento Moderno para a Web
-        if (bookRepository.findByIsbn("9782722203402").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9782722203402").isEmpty()) {
             Book book = new Book(
                     new Isbn("9782722203402"),
                     new Title("Introdução ao Desenvolvimento Moderno para a Web"),
@@ -88,11 +91,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("4", "5"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 5. O Principezinho
-        if (bookRepository.findByIsbn("9789722328296").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789722328296").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789722328296"),
                     new Title("O Principezinho"),
@@ -101,11 +104,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("6"),
                     "bookPhotoTest.jpg"
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 6. A Criada Está a Ver
-        if (bookRepository.findByIsbn("9789895702756").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789895702756").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789895702756"),
                     new Title("A Criada Está a Ver"),
@@ -114,11 +117,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("7"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 7. O Hobbit
-        if (bookRepository.findByIsbn("9789897776090").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789897776090").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789897776090"),
                     new Title("O Hobbit"),
@@ -127,11 +130,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("8"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 8. Histórias de Vigaristas e Canalhas
-        if (bookRepository.findByIsbn("9789896379636").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789896379636").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789896379636"),
                     new Title("Histórias de Vigaristas e Canalhas"),
@@ -140,11 +143,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("8, 9"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 9. Histórias de Aventureiros e Patifes
-        if (bookRepository.findByIsbn("9789896378905").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789896378905").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789896378905"),
                     new Title("Histórias de Aventureiros e Patifes"),
@@ -153,11 +156,11 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("8", "9"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
 
         // 10. Windhaven
-        if (bookRepository.findByIsbn("9789896375225").isEmpty()) {
+        if (bookQueryRepository.findByIsbn("9789896375225").isEmpty()) {
             Book book = new Book(
                     new Isbn("9789896375225"),
                     new Title("Windhaven"),
@@ -166,7 +169,7 @@ public class Bootstrapper implements CommandLineRunner {
                     List.of("8", "10"),
                     null
             );
-            bookRepository.save(book);
+            bookCommandRepository.save(book);
         }
     }
 }

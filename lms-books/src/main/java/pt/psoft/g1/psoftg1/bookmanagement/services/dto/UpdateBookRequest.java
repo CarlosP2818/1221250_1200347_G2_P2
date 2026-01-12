@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.bookmanagement.services;
+package pt.psoft.g1.psoftg1.bookmanagement.services.dto;
 
 import jakarta.annotation.Nullable;
 import lombok.*;
