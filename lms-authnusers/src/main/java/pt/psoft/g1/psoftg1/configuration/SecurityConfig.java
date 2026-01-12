@@ -107,21 +107,25 @@ public class SecurityConfig {
 
         // Set permissions on endpoints
         http.authorizeHttpRequests()
-                // Swagger endpoints must be publicly accessible
-                .requestMatchers("/").permitAll().requestMatchers(format("%s/**", restApiDocPath)).permitAll()
+                .requestMatchers("/").permitAll()
+                .requestMatchers(format("%s/**", restApiDocPath)).permitAll()
                 .requestMatchers(format("%s/**", swaggerPath)).permitAll()
-                // Our public endpoints
-                .requestMatchers("api/public/**").permitAll()// public assets & end-points
-                .requestMatchers("api/admin/**").hasRole(Role.ADMIN) // only admin can access admin endpoints
-                .requestMatchers(HttpMethod.POST, "/api/readers").permitAll()
-                // No teu SecurityConfig.java
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("api/admin/users/new-feature").permitAll()// unregistered should be able to register
-                // Our private endpoints
 
-                // Admin has access to all endpoints
-                //.requestMatchers("/**").hasRole(Role.ADMIN).anyRequest().authenticated()
-                // Set up oauth2 resource server
+                // 1. Endpoints Públicos (sem token)
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+
+                // 2. EXCEÇÃO: Permitir a nova funcionalidade ANTES de bloquear o admin
+                .requestMatchers("/api/admin/users/api/readers/new-feature").permitAll()
+
+                // 3. EXCEÇÃO: Se quiseres testar o Kill Switch sem token num endpoint de admin
+                .requestMatchers(HttpMethod.GET, "/api/admin/users").permitAll()
+
+                // 4. Bloqueio por Roles (o resto do admin continua protegido)
+                .requestMatchers("/api/admin/**").hasRole(Role.ADMIN)
+                .requestMatchers(HttpMethod.POST, "/api/readers").permitAll()
+
+                .anyRequest().authenticated()
                 .and().httpBasic(Customizer.withDefaults()).oauth2ResourceServer().jwt();
 
         return http.build();
