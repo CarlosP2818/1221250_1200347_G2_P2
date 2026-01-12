@@ -115,7 +115,8 @@ public class SecurityConfig {
                 .requestMatchers("api/admin/**").hasRole(Role.ADMIN) // only admin can access admin endpoints
                 .requestMatchers(HttpMethod.POST, "/api/readers").permitAll()
                 // No teu SecurityConfig.java
-                .requestMatchers("/actuator/health").permitAll()// unregistered should be able to register
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("api/admin/users/new-feature").permitAll()// unregistered should be able to register
                 // Our private endpoints
 
                 // Admin has access to all endpoints

@@ -112,7 +112,7 @@ public class UserAdminApi {
 		return new ListResponse<>(userViewMapper.toUserView(searchUsers));
 	}
 
-	@GetMapping("/api/readers/new-feature")
+	@GetMapping("new-feature")
 	public ResponseEntity<?> newFeature(@RequestHeader(value = "X-LMS-Beta-Access", required = false) String secret) {
 		if ("true".equals(secret)) {
 			return ResponseEntity.ok("Bem-vindo à funcionalidade Beta!");
