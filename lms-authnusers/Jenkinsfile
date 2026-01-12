@@ -101,27 +101,32 @@ pipeline {
             }
         }
 
-      stage('Verify Strategies (No Auth Required)') {
+      stage('Verify Strategies (Network Mesh)') {
           steps {
               script {
-                  // Usamos o IP do host para o contentor do Jenkins conseguir comunicar
-                  def dockerHost = "172.17.0.1"
+                  // Descobre o nome real do container que acabou de subir
+                  def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
+                  echo "--- Testando contra o container: ${containerName} na porta 8080 ---"
 
-                  echo "--- Testando Dark Launch (Sem Token) ---"
-                  // Se o grep '200' passar, significa que o permitAll() funcionou
-                  sh "curl -s -i -H 'X-LMS-Beta-Access: true' http://${dockerHost}:${env.NEXT_PORT}/api/admin/users/api/readers/new-feature | grep '200'"
+                  echo "--- Testando Dark Launch ---"
+                  sh """
+                      docker run --rm --network lms_network curlimages/curl:latest \
+                      -s -i -H 'X-LMS-Beta-Access: true' \
+                      http://${containerName}:8080/api/admin/users/new-feature | grep '200'
+                  """
 
                   echo "--- Testando Kill Switch ---"
                   withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
                       sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
-                      echo "Aguardando 10s para ativação..."
                       sleep 10
 
-                      // Testamos o Kill Switch num endpoint que agora é público
-                      sh "curl -s -i http://${dockerHost}:${env.NEXT_PORT}/api/admin/users | grep '503'"
+                      sh """
+                          docker run --rm --network lms_network curlimages/curl:latest \
+                          -s -i http://${containerName}:8080/api/admin/users | grep '503'
+                      """
                   }
 
-                  // Restaurar para Smoke Tests
+                  // Restaurar para a versão funcional
                   withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
                       sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
                   }
