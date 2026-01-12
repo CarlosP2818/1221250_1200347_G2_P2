@@ -102,36 +102,46 @@ pipeline {
         }
 
       stage('Verify Strategies (Network Mesh)') {
-          steps {
-              script {
-                  def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
-                  echo "--- Testando contra o container: ${containerName} na porta 8080 ---"
+                steps {
+                    script {
+                        // Procura o nome exato do container (ex: users-green-users-1)
+                        def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
 
-                  echo "--- Testando Dark Launch ---"
-                  sh """
-                      docker run --rm --network lms_network curlimages/curl:latest \
-                      -s -i -H 'X-LMS-Beta-Access: true' \
-                      http://localhost:8080/api/admin/users/new-feature | grep '200'
-                  """
+                        if (!containerName) {
+                            error "Não foi possível encontrar o container users-${env.NEXT_COLOR}"
+                        }
 
-                  echo "--- Testando Kill Switch ---"
-                  withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
-                      sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
-                      sleep 10
+                        echo "--- Testando contra o container: ${containerName} na porta 8080 ---"
 
-                      sh """
-                          docker run --rm --network lms_network curlimages/curl:latest \
-                          -s -i http://${containerName}:8080/api/admin/users | grep '503'
-                      """
-                  }
+                        echo "--- Testando Dark Launch (Header Secreto) ---"
+                        // Link corrigido para coincidir com o mapeamento do teu Java Controller
+                        sh """
+                            docker run --rm --network lms_network curlimages/curl:latest \
+                            -s -i -H 'X-LMS-Beta-Access: true' \
+                            http://${containerName}:8080/api/admin/users/new-feature | grep '200'
+                        """
 
-                  // Restaurar para a versão funcional
-                  withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
-                      sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
-                  }
-              }
-          }
-      }
+                        echo "--- Testando Kill Switch (Toggling Evidence) ---"
+                        withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
+                            sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
+                            echo "Aguardando 10 segundos para o Kill Switch propagar..."
+                            sleep 10
+
+                            // Testamos o endpoint base que deve retornar 503
+                            sh """
+                                docker run --rm --network lms_network curlimages/curl:latest \
+                                -s -i http://${containerName}:8080/api/admin/users | grep '503'
+                            """
+                        }
+
+                        // Restaurar para a versão funcional (Kill Switch OFF)
+                        echo "--- Restaurando funcionalidade (Kill Switch OFF) ---"
+                        withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
+                            sh "docker compose -p users-${env.NEXT_COLOR} up -d --no-deps users"
+                        }
+                    }
+                }
+            }
 
                stage('Manual Approval') {
                    steps {
