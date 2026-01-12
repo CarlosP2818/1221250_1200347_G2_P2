@@ -102,40 +102,6 @@ pipeline {
             }
         }
 
-        stage('Verify Strategies (k6)') {
-            steps {
-               // dir('lms-reader') {
-               //     script {
-               //         def containerName = "readers-${env.NEXT_COLOR}"
-               //         echo "--- Validando Canary Readers no container: ${containerName} ---"
-//
-               //         withEnv([
-               //             "KILLSWITCH_ACTIVE=true",
-               //             "COLOR=${env.NEXT_COLOR}",
-               //             "HOST_PORT=${env.NEXT_PORT}",
-               //             "WEIGHT=0",
-               //             "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
-               //         ]) {
-               //             sh "docker compose -p readers-${env.NEXT_COLOR} up -d --no-deps readers"
-               //             sleep 10
-               //             // O target URL usa a porta interna 8090 do Readers
-               //             sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://${containerName}:8090'"
-               //         }
-//
-               //         withEnv([
-               //             "KILLSWITCH_ACTIVE=false",
-               //             "COLOR=${env.NEXT_COLOR}",
-               //             "HOST_PORT=${env.NEXT_PORT}",
-               //             "WEIGHT=0",
-               //             "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
-               //         ]) {
-               //             sh "docker compose -p readers-${env.NEXT_COLOR} up -d --no-deps readers"
-               //         }
-               //     }
-               // }
-            }
-        }
-
         stage('Manual Approval & Switch') {
             steps {
                 input message: "Canary Readers ${env.NEXT_COLOR} validado. Deseja promover para 100% do tráfego?", ok: "Promover"
