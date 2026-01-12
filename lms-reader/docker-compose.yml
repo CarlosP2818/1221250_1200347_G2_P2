@@ -3,6 +3,7 @@ version: "3.9"
 services:
     readers:
         image: ${DOCKER_IMAGE:-cralos062/lms-readers:latest}
+        # container_name removido para evitar conflitos no swap Blue/Green
         ports:
             - "${HOST_PORT:-8090}:8090"
         depends_on:
@@ -16,27 +17,25 @@ services:
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
             FEATURE_MAINTENANCE_KILLSWITCH: ${KILLSWITCH_ACTIVE:-false}
+            DARKLAUNCH_SECRET_HEADER: X-LMS-Beta-Access
         networks:
             lms_network:
                 aliases:
                     - readers-service
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.readers-${COLOR:-blue}-router.rule=PathPrefix(`/api/readers`)"
-            - "traefik.http.routers.readers-${COLOR:-blue}-router.entrypoints=web"
-            - "traefik.http.routers.readers-${COLOR:-blue}-router.service=readers-canary-service"
-
-            # Load Balancer com Pesos
-            - "traefik.http.services.readers-canary-service.loadbalancer.weighted.services.readers-${COLOR:-blue}-backend@docker"
-            - "traefik.http.services.readers-canary-service.loadbalancer.services.readers-${COLOR:-blue}-backend@docker.weight=${WEIGHT:-0}"
-            - "traefik.http.services.readers-${COLOR:-blue}-backend@docker.loadbalancer.server.port=8090"
-
+            - "traefik.http.routers.readers-${COLOR:-blue}.rule=PathPrefix(`/api/readers`)"
+            - "traefik.http.services.readers-${COLOR:-blue}.loadbalancer.server.port=8090"
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:8090/actuator/health" ]
+            # Usando wget para consistência com o teu exemplo do Users
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/actuator/health" ]
             interval: 10s
             timeout: 5s
             retries: 5
             start_period: 40s
+        deploy:
+            update_config:
+                order: start-first
 
     postgres_readers:
         image: postgres:18
@@ -46,7 +45,8 @@ services:
             POSTGRES_PASSWORD: password
             POSTGRES_DB: readers_1
         volumes:
-            - postgres_readers_volume_${COLOR:-blue}:/var/lib/postgresql/data
+            # Volume partilhado ou específico por projeto conforme o prefixo -p
+            - postgres_readers_volume:/var/lib/postgresql/data
         networks:
             lms_network:
                 aliases:
@@ -60,5 +60,4 @@ networks:
         external: true
 
 volumes:
-    postgres_readers_volume_blue:
-    postgres_readers_volume_green:
+    postgres_readers_volume:
