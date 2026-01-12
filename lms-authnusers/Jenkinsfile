@@ -124,7 +124,7 @@ pipeline {
                             // 3. Chamamos o k6 passando o TARGET_URL via variável de ambiente (-e)
                             // Usamos a porta 8080 pois o k6 entra na rede 'lms_network'
                             sh """
-                                docker run --rm --network lms_network -i loadimpact/k6 run - < lms-authnusers/verify_strategies.js \
+                                docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js \
                                 -e TARGET_URL="http://${containerName}:8080"
                             """
                         }
