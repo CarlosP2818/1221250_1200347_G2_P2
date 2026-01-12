@@ -2,9 +2,8 @@ version: "3.9"
 
 services:
     users:
-        image: ${DOCKER_IMAGE}
-        container_name: users-${COLOR}
-        # Adicionada proteção para não falhar se as variáveis não existirem
+        image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
+        # container_name removido para não haver conflito durante o swap Blue/Green
         ports:
             - "${HOST_PORT:-8080}:8080"
         depends_on:
@@ -17,46 +16,34 @@ services:
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
             FEATURE_MAINTENANCE_KILLSWITCH: ${KILLSWITCH_ACTIVE:-false}
+            DARKLAUNCH_SECRET_HEADER: X-LMS-Beta-Access
         networks:
             lms_network:
                 aliases:
-                    - users-service
+                    - users-service # O Readers usa este nome para comunicar
         labels:
             - "traefik.enable=true"
-
-            # 1. Roteamento: Definir o Router único para esta cor
-            - "traefik.http.routers.users-${COLOR}-router.rule=PathPrefix(`/api/users`)"
-            - "traefik.http.routers.users-${COLOR}-router.entrypoints=web"
-
-            # 2. Atribuir este router ao serviço de Canary (que será comum às duas cores)
-            - "traefik.http.routers.users-${COLOR}-router.service=users-canary-service"
-
-            # 3. Definição do Load Balancer Weighted
-            # Nota: Usamos @docker para garantir que o Traefik procure o serviço no provider Docker
-            - "traefik.http.services.users-canary-service.loadbalancer.weighted.services.users-${COLOR}-backend@docker"
-            - "traefik.http.services.users-canary-service.loadbalancer.services.users-${COLOR}-backend@docker.weight=${WEIGHT:-0}"
-
-            # 4. Definição do Backend real para esta cor
-            - "traefik.http.services.users-${COLOR}-backend@docker.loadbalancer.server.port=8080"
-
+            - "traefik.http.routers.users-${COLOR:-blue}.rule=PathPrefix(`/api/users`)"
+            - "traefik.http.services.users-${COLOR:-blue}.loadbalancer.server.port=8080"
         healthcheck:
-            # Importante: O Traefik só cria a rota se o status for HEALTHY
-            test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
             interval: 10s
             timeout: 5s
             retries: 5
             start_period: 40s
+        deploy:
+            update_config:
+                order: start-first
 
     postgres_users:
         image: postgres:18
-        container_name: postgres-users-${COLOR}
         restart: unless-stopped
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
             POSTGRES_DB: users_1
         volumes:
-            - postgres_users_volume_${COLOR}:/var/lib/postgresql/data
+            - postgres_users_volume:/var/lib/postgresql
         networks:
             lms_network:
                 aliases:
@@ -70,6 +57,4 @@ networks:
         external: true
 
 volumes:
-    # Volumes persistentes para cada cor
-    postgres_users_volume_blue:
-    postgres_users_volume_green:
+    postgres_users_volume:
