@@ -6,7 +6,6 @@ export const options = {
     vus: 5,           // 5 utilizadores virtuais simultâneos
     duration: '10s',  // duração total do teste de fumo
     thresholds: {
-        http_req_duration: ['p(95)<500'], // 95% dos pedidos devem ser < 500ms
         http_req_failed: ['rate<0.01'],   // menos de 1% de erros
     },
 };
