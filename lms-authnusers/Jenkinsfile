@@ -103,58 +103,56 @@ pipeline {
             }
         }
 
-       stage('Remote Blue-Green Deploy') {
-           steps {
-               sshagent([env.SSH_CREDENTIALS_ID]) {
-                   script {
-                       dir('lms-authnusers') {
-                           // Configuração de flags para ignorar verificação de host
-                           def sshFlags = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      stage('Remote Blue-Green Deploy') {
+          steps {
+              sshagent([env.SSH_CREDENTIALS_ID]) {
+                  script {
+                      dir('lms-authnusers') {
+                          // Configuração de segurança
+                          def sshFlags = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-                           // PASSAGEM CRÍTICA: Definir o DOCKER_HOST para usar o binário SSH do sistema
-                           // Em algumas versões, o Docker exige que as flags venham via DOCKER_SSH_COMMAND
-                           // mas noutras funciona melhor chamando o comando SSH explicitamente.
+                          withEnv([
+                              "DOCKER_HOST=ssh://root@${env.VM_ADDRESS}",
+                              "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                              "COLOR=${env.NEXT_COLOR}",
+                              "HOST_PORT=${env.NEXT_PORT}",
+                              "DOCKER_SSH_COMMAND=ssh -o StrictHostKeyChecking=no"
+                          ]) {
+                              echo "--- Preparando SSH Known Hosts ---"
+                              // Este comando "ensina" ao Jenkins que a VM é segura
+                              sh "mkdir -p ~/.ssh && ssh-keyscan -H ${env.VM_ADDRESS} >> ~/.ssh/known_hosts"
 
-                           withEnv([
-                               "DOCKER_HOST=ssh://root@${env.VM_ADDRESS}",
-                               "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
-                               "COLOR=${env.NEXT_COLOR}",
-                               "HOST_PORT=${env.NEXT_PORT}",
-                               "DOCKER_SSH_COMMAND=ssh ${sshFlags}"
-                           ]) {
-                               echo "--- Verificando conexão via SSH ---"
-                               // Teste de força bruta: se este comando passar, o SSH está a funcionar
-                               sh "ssh ${sshFlags} root@${env.VM_ADDRESS} docker info"
+                              echo "--- Verificando conexão via SSH ---"
+                              sh "ssh ${sshFlags} root@${env.VM_ADDRESS} docker info"
 
-                               echo "--- Fazendo Deploy na VM ISEP (${env.NEXT_COLOR}) ---"
-                               // Criar rede remotamente via SSH direto para garantir execução
-                               sh "ssh ${sshFlags} root@${env.VM_ADDRESS} 'docker network create lms_network || true'"
+                              echo "--- Fazendo Deploy na VM ISEP (${env.NEXT_COLOR}) ---"
+                              sh "ssh ${sshFlags} root@${env.VM_ADDRESS} 'docker network create lms_network || true'"
 
-                               // Executar o Compose
-                               sh "docker compose -p users-${env.NEXT_COLOR} up -d users"
+                              // AGORA o docker compose já não deve dar erro de Host Key
+                              sh "docker compose -p users-${env.NEXT_COLOR} up -d users"
 
-                               echo "--- Aguardando Health Check ---"
-                               timeout(time: 5, unit: 'MINUTES') {
-                                   waitUntil {
-                                       try {
-                                           // Consultar o status remotamente
-                                           def containerId = sh(script: "docker compose -p users-${env.NEXT_COLOR} ps -q users", returnStdout: true).trim()
-                                           if (!containerId) return false
+                              echo "--- Aguardando Health Check ---"
+                              timeout(time: 5, unit: 'MINUTES') {
+                                  waitUntil {
+                                      try {
+                                          // Usamos SSH direto para o inspect para ser mais fiável
+                                          def containerId = sh(script: "ssh ${sshFlags} root@${env.VM_ADDRESS} 'docker compose -p users-${env.NEXT_COLOR} ps -q users'", returnStdout: true).trim()
+                                          if (!containerId) return false
 
-                                           def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
-                                           return (health == "healthy")
-                                       } catch (Exception e) {
-                                           return false
-                                       }
-                                   }
-                               }
-                               echo "--- Deploy com sucesso na cor ${env.NEXT_COLOR}! ---"
-                           }
-                       }
-                   }
-               }
-           }
-       }
+                                          def health = sh(script: "ssh ${sshFlags} root@${env.VM_ADDRESS} 'docker inspect --format=\"{{.State.Health.Status}}\" ${containerId}'", returnStdout: true).trim()
+                                          return (health == "healthy")
+                                      } catch (Exception e) {
+                                          return false
+                                      }
+                                  }
+                              }
+                              echo "--- Deploy com sucesso na cor ${env.NEXT_COLOR}! ---"
+                          }
+                      }
+                  }
+              }
+          }
+      }
 
       stage('Verify Strategies (k6)') {
                 steps {
