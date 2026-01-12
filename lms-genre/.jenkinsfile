@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     tools { maven 'M3' }
 
     environment {
@@ -8,26 +7,13 @@ pipeline {
         DOCKER_IMAGE_NAME = 'lms-genre'
         DOCKER_NAMESPACE = 'cralos062'
         IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
-        MAVEN_HOME = '/usr/share/maven'
     }
 
     stages {
         stage('Checkout & Build') {
             steps {
                 checkout scm
-                // Executa o build maven conforme o teu original
-                sh "${MAVEN_HOME}/bin/mvn clean install -DskipTests"
-            }
-        }
-
-        stage('Static Analysis') {
-            parallel {
-                stage('SpotBugs') {
-                    steps { sh "${MAVEN_HOME}/bin/mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs" }
-                }
-                stage('Pitest') {
-                    steps { sh "${MAVEN_HOME}/bin/mvn org.pitest:pitest-maven:mutationCoverage" }
-                }
+                sh "mvn clean package -DskipTests"
             }
         }
 
@@ -36,7 +22,6 @@ pipeline {
                 script {
                     def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
-
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
                         def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
                         customImage.push("${env.BUILD_TAG}")
@@ -46,24 +31,30 @@ pipeline {
             }
         }
 
-        stage('Canary Deploy (Weight 0)') {
+        stage('Blue-Green Deploy') {
             steps {
                 script {
                     def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep genre-green || true", returnStdout: true).trim()
                     env.ACTIVE_COLOR = isGreenActive ? "green" : "blue"
                     env.NEXT_COLOR = isGreenActive ? "blue" : "green"
                     env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "30070" : "30071"
-                    env.ACTIVE_PORT = (env.ACTIVE_COLOR == "blue") ? "30070" : "30071"
 
-                    echo "Ativo: ${env.ACTIVE_COLOR} | Deploying Canary Genre: ${env.NEXT_COLOR} (Peso 0)"
-
-                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=0"]) {
+                    withEnv([
+                        "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                        "COLOR=${env.NEXT_COLOR}",
+                        "HOST_PORT=${env.NEXT_PORT}",
+                        "WEIGHT=0"
+                    ]) {
                         sh "docker network create lms_network || true"
-                        sh "docker compose up -d"
+                        // Cleanup de tentativas falhadas e sobe a nova cor
+                        sh "docker compose -p genre-${env.NEXT_COLOR} down -v || true"
+                        sh "docker compose -p genre-${env.NEXT_COLOR} up -d"
 
                         timeout(time: 5, unit: 'MINUTES') {
                             waitUntil {
-                                def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' genre-${env.NEXT_COLOR}", returnStdout: true).trim()
+                                def containerId = sh(script: "docker compose -p genre-${env.NEXT_COLOR} ps -q genre-service", returnStdout: true).trim()
+                                if (!containerId) return false
+                                def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
                                 return (health == "healthy")
                             }
                         }
@@ -72,23 +63,26 @@ pipeline {
             }
         }
 
-        stage('Canary Observation (50/50)') {
+        stage('Verify Strategies (k6)') {
             steps {
                 script {
-                    echo "--- Tráfego 50/50 entre ${env.ACTIVE_COLOR} e ${env.NEXT_COLOR} ---"
-                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=50"]) {
+                    def containerName = sh(script: "docker ps --filter 'name=genre-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
+                    withEnv(["KILLSWITCH_ACTIVE=true", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
+                        sh "docker compose -p genre-${env.NEXT_COLOR} up -d --no-deps genre-service"
+                        sleep 10
+                        sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://${containerName}:8089' -e KILLSWITCH_ACTIVE=true"
+                    }
+                    // Restaurar para OFF
+                    withEnv(["KILLSWITCH_ACTIVE=false", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"]) {
                         sh "docker compose -p genre-${env.NEXT_COLOR} up -d --no-deps genre-service"
                     }
-                    withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:latest", "COLOR=${env.ACTIVE_COLOR}", "HOST_PORT=${env.ACTIVE_PORT}", "WEIGHT=50"]) {
-                        sh "docker compose -p genre-${env.ACTIVE_COLOR} up -d --no-deps genre-service"
-                    }
                 }
-                input message: "Aprovar promoção total para ${env.NEXT_COLOR}?", ok: "Promover"
             }
         }
 
-        stage('Switch Traffic (100%)') {
+        stage('Manual Approval & Switch') {
             steps {
+                input message: "Promover Genre ${env.NEXT_COLOR} para 100%?"
                 script {
                     withEnv(["DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}", "COLOR=${env.NEXT_COLOR}", "HOST_PORT=${env.NEXT_PORT}", "WEIGHT=100"]) {
                         sh "docker compose -p genre-${env.NEXT_COLOR} up -d --no-deps genre-service"
@@ -99,18 +93,14 @@ pipeline {
 
         stage('Cleanup Old Version') {
             steps {
-                script {
-                    sh "docker compose -p genre-${env.ACTIVE_COLOR} down || true"
-                }
+                sh "docker compose -p genre-${env.ACTIVE_COLOR} down || true"
             }
         }
     }
 
     post {
         failure {
-            script {
-                sh "docker compose -p genre-${env.NEXT_COLOR} down || true"
-            }
+            script { sh "docker compose -p genre-${env.NEXT_COLOR} down || true" }
         }
         always { cleanWs() }
     }

@@ -1,9 +1,6 @@
-version: "3.9"
-
 services:
     genre-service:
-        image: ${DOCKER_IMAGE}
-        container_name: genre-${COLOR:-blue}
+        image: ${DOCKER_IMAGE:-cralos062/lms-genre:latest}
         ports:
             - "${HOST_PORT:-8089}:8089"
         depends_on:
@@ -15,30 +12,31 @@ services:
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
             FILE_UPLOAD_DIR: uploads
+            FEATURE_MAINTENANCE_KILLSWITCH: ${KILLSWITCH_ACTIVE:-false}
+            DARKLAUNCH_SECRET_HEADER: X-LMS-Beta-Access
         networks:
-            - lms_network
-        volumes:
-            - uploaded_files_volume_${COLOR:-blue}:/tmp
+            lms_network:
+                aliases:
+                    - genre-service
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.genre-${COLOR:-blue}.rule=PathPrefix(`/api/genres`)"
-            - "traefik.http.routers.genre-${COLOR:-blue}.entrypoints=web"
-            - "traefik.http.routers.genre-${COLOR:-blue}.service=genre-canary-service"
-            
+            - "traefik.http.routers.genre-${COLOR:-blue}-router.rule=PathPrefix(`/api/genres`)"
+            - "traefik.http.routers.genre-${COLOR:-blue}-router.entrypoints=web"
+            - "traefik.http.routers.genre-${COLOR:-blue}-router.service=genre-canary-service"
+
             # Lógica de Pesos para Canary
             - "traefik.http.services.genre-canary-service.loadbalancer.weighted.services.genre-${COLOR:-blue}-backend@docker"
             - "traefik.http.services.genre-canary-service.loadbalancer.services.genre-${COLOR:-blue}-backend@docker.weight=${WEIGHT:-0}"
             - "traefik.http.services.genre-${COLOR:-blue}-backend@docker.loadbalancer.server.port=8089"
 
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:8089/actuator/health" ]
-            interval: 20s
-            timeout: 10s
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8089/actuator/health" ]
+            interval: 15s
+            timeout: 5s
             retries: 5
             start_period: 60s
 
     mongo_genres:
-        container_name: mongo-genres-${COLOR:-blue}
         image: mongo:6
         restart: unless-stopped
         environment:
@@ -46,19 +44,22 @@ services:
             MONGO_INITDB_ROOT_PASSWORD: 48aed78edc140a47a9f5d53a
             MONGO_INITDB_DATABASE: genres_1
         volumes:
-            - mongo_data_${COLOR:-blue}:/data/db
+            - mongo_data:/data/db
         networks:
-            - lms_network
+            lms_network:
+                aliases:
+                    - mongo_genres
         healthcheck:
-            test: ["CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })"]
+            # MongoDB 6 usa mongosh
+            test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
             interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
 
 networks:
     lms_network:
         external: true
 
 volumes:
-    mongo_data_blue:
-    mongo_data_green:
-    uploaded_files_volume_blue:
-    uploaded_files_volume_green:
+    mongo_data:
