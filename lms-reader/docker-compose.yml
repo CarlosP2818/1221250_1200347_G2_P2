@@ -2,10 +2,10 @@ version: "3.9"
 
 services:
     readers:
-        image: ${DOCKER_IMAGE:-cralos062/lms-readers:latest}
-        container_name: readers-service
+        image: ${DOCKER_IMAGE}
+        container_name: readers-${COLOR:-blue}
         ports:
-            - "8090:8090" # Mantida a porta para comunicação direta entre serviços
+            - "${HOST_PORT:-8090}:8090"
         depends_on:
             postgres_readers:
                 condition: service_healthy
@@ -17,54 +17,49 @@ services:
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
         networks:
-            - lms_network
-
-        # --- REQUISITO: Exposure/Release (Traefik Labels) ---
+            lms_network:
+                aliases:
+                    - readers-service
         labels:
             - "traefik.enable=true"
-            # Rota específica para readers
-            - "traefik.http.routers.readers.rule=PathPrefix(`/api/readers`)"
-            - "traefik.http.services.readers.loadbalancer.server.port=8090"
+            # Router único por cor
+            - "traefik.http.routers.readers-${COLOR:-blue}.rule=PathPrefix(`/api/readers`)"
+            - "traefik.http.routers.readers-${COLOR:-blue}.entrypoints=web"
+            # Aponta para o serviço de balanceamento Canary
+            - "traefik.http.routers.readers-${COLOR:-blue}.service=readers-canary-service"
 
-        # --- REQUISITO: Health checks in prod ---
+            # Configuração de Pesos
+            - "traefik.http.services.readers-canary-service.loadbalancer.weighted.services.readers-${COLOR:-blue}-backend@docker"
+            - "traefik.http.services.readers-canary-service.loadbalancer.services.readers-${COLOR:-blue}-backend@docker.weight=${WEIGHT:-0}"
+            - "traefik.http.services.readers-${COLOR:-blue}-backend@docker.loadbalancer.server.port=8090"
+
         healthcheck:
-            # O Spring Boot precisa da dependência 'spring-boot-starter-actuator'
-            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/actuator/health" ]
+            test: [ "CMD", "curl", "-f", "http://localhost:8090/actuator/health" ]
             interval: 20s
             timeout: 10s
             retries: 5
             start_period: 60s
 
-        # --- REQUISITO: Zero Downtime / Rolling Update ---
-        deploy:
-            update_config:
-                order: stop-first
-                failure_action: rollback
-
     postgres_readers:
-        container_name: postgres_readers
-        image: postgres:18 # Usando a 18 para consistência com o outro serviço
+        container_name: postgres-readers-${COLOR:-blue}
+        image: postgres:18
         restart: always
-        ports:
-            - "5433:5432"
         environment:
             POSTGRES_DB: readers_1
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: password
         volumes:
-            # Ajustado para /var/lib/postgresql para evitar o erro do Postgres 18+
-            - postgres_readers_volume:/var/lib/postgresql
+            - postgres_readers_volume_${COLOR:-blue}:/var/lib/postgresql
         networks:
             - lms_network
         healthcheck:
-            test: [ "CMD", "pg_isready", "-U", "postgres" ]
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
             interval: 10s
-            retries: 5
-            timeout: 5s
 
 networks:
     lms_network:
         external: true
 
 volumes:
-    postgres_readers_volume:
+    postgres_readers_volume_blue:
+    postgres_readers_volume_green:
