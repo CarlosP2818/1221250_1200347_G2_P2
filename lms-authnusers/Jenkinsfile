@@ -104,7 +104,6 @@ pipeline {
       stage('Verify Strategies (Network Mesh)') {
           steps {
               script {
-                  // Descobre o nome real do container que acabou de subir
                   def containerName = sh(script: "docker ps --filter 'name=users-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
                   echo "--- Testando contra o container: ${containerName} na porta 8080 ---"
 
@@ -112,7 +111,7 @@ pipeline {
                   sh """
                       docker run --rm --network lms_network curlimages/curl:latest \
                       -s -i -H 'X-LMS-Beta-Access: true' \
-                      http://${containerName}:8080/api/admin/users/new-feature | grep '200'
+                      http://localhost:8080/api/admin/users/new-feature | grep '200'
                   """
 
                   echo "--- Testando Kill Switch ---"
