@@ -120,12 +120,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/books/search").hasAnyRole(Role.LIBRARIAN, Role.READER)
                 // endBooks
 //                // genres
-//                .requestMatchers(HttpMethod.GET, "/api/genres/top5").hasRole(Role.LIBRARIAN)
-//                .requestMatchers(HttpMethod.GET, "/api/genres/avgLendings").hasRole(Role.LIBRARIAN)
-//                .requestMatchers(HttpMethod.POST, "/api/genres/avgLendingsPerGenre").hasRole(Role.LIBRARIAN)
-//                .requestMatchers(HttpMethod.GET, "/api/genres/lendingsPerMonthLastTwelveMonths").hasRole(Role.LIBRARIAN)
-//                .requestMatchers(HttpMethod.GET, "/api/genres/lendingsAverageDurationPerMonth").hasRole(Role.LIBRARIAN)
-//                // end genres
+                .requestMatchers(HttpMethod.GET, "/api/genres/top5").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/genres/avgLendings").hasRole(Role.LIBRARIAN)
+                .requestMatchers(HttpMethod.POST, "/api/genres/avgLendingsPerGenre").hasRole(Role.LIBRARIAN)
+                .requestMatchers(HttpMethod.GET, "/api/genres/lendingsPerMonthLastTwelveMonths").hasRole(Role.LIBRARIAN)
+                .requestMatchers(HttpMethod.GET, "/api/genres/lendingsAverageDurationPerMonth").hasRole(Role.LIBRARIAN)
+                // end genres
                 // Admin has access to all endpoints
                 //.requestMatchers("/**").hasRole(Role.ADMIN).anyRequest().authenticated()
                 .anyRequest().authenticated()

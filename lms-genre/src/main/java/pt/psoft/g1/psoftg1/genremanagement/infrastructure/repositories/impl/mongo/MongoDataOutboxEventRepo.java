@@ -3,5 +3,5 @@ package pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.mon
 import org.springframework.data.mongodb.repository.MongoRepository;
 import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 
-public interface MongoDataOutboxEventRepo extends MongoRepository<OutboxEventMongo, Long> {
+public interface MongoDataOutboxEventRepo extends MongoRepository<OutboxEventMongo, String> {
 }

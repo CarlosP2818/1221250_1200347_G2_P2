@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.impl.mongo.MongoDataOutboxEventRepo;
 import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
+import pt.psoft.g1.psoftg1.genremanagement.repositories.GenreRepository;
 import pt.psoft.g1.psoftg1.genremanagement.services.CreateGenreRequest;
 import pt.psoft.g1.psoftg1.genremanagement.services.GenreService;
 import pt.psoft.g1.psoftg1.genremanagement.services.rabbitmq.events.GenreCreatedEvent;
@@ -17,13 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class GenreReplyListener {
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-    @Autowired
-    private MongoDataOutboxEventRepo mongoDataOutboxEventRepo;
-    @Autowired
-    private GenreService genreService;
+
+    private final RabbitTemplate rabbitTemplate;
+    private final MongoDataOutboxEventRepo mongoDataOutboxEventRepo;
+    private final GenreRepository genreRepository;
 
     @RabbitListener(queues = "genre.created.queue")
     public void receive(GenreCreatedEvent event) {
@@ -46,7 +46,7 @@ public class GenreReplyListener {
         mongoDataOutboxEventRepo.save(tempGenre);
         savedTempGenres.add(tempGenre);
 
-        genreService.createGenre(new Genre(tempGenre.getName()));
+        genreRepository.save(new Genre(event.getGenreName()));
 
         // Enviar reply para o Book Service
         GenreFoundReply reply = new GenreFoundReply(event.getCorrelationId(), tempGenre.getName());

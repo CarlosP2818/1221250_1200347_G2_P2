@@ -1,4 +1,4 @@
-package pt.psoft.g1.psoftg1.genremanagement.services;
+package pt.psoft.g1.psoftg1.genremanagement.services.rabbitmq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.DirectExchange;
@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.genremanagement.api.GenreTempCreatedEvent;
+import pt.psoft.g1.psoftg1.genremanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 
 @Service
@@ -23,12 +24,12 @@ public class RabbitMQPublisher {
         this.directExchange = directExchange;
     }
 
-    public void publishGenreCreated(Genre genre) {
+    public void publishGenreCreated(OutboxEventMongo genre) {
         try {
-            GenreTempCreatedEvent event = new GenreTempCreatedEvent(genre.getCorrelationId(), genre.getGenre());
+            GenreTempCreatedEvent event = new GenreTempCreatedEvent(genre.getName());
             rabbitTemplate.convertAndSend(directExchange.getName(), "genre.created", event);
 
-            System.out.println("Published event for: " + genre.getGenre());
+            System.out.println("Published event for: " + genre.getName());
         } catch (Exception e) {
             e.printStackTrace();
         }
