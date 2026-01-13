@@ -8,6 +8,7 @@ export let options = {
 
 export default function () {
 
+    // 1. Login
     let loginRes = http.post('http://localhost:8080/api/public/login', JSON.stringify({
         username: 'maria@gmail.com',
         password: 'Mariaroberta!123'
@@ -15,11 +16,13 @@ export default function () {
 
     check(loginRes, { 'login ok': (r) => r.status === 200 });
 
-    let tokenHeader = loginRes.headers['Authorization'];
-    if (!tokenHeader) {
-        throw new Error('Token não encontrado no header Authorization');
-    }
+    // Pega o token do header Authorization
+        let tokenHeader = loginRes.headers['Authorization'];
+        if (!tokenHeader) {
+            throw new Error('Token não encontrado no header Authorization');
+        }
 
+    // Configura headers com Authorization
     const params = {
         headers: {
             'Content-Type': 'application/json',
@@ -49,8 +52,6 @@ export default function () {
             'GET author detail status 200': (r) => r.status === 200,
         });
 
-        console.log(`GET /authors/${authorNumber} - Status: ${getRes.status}`);
-        console.log(`Response: ${getRes.body}`);
     }
 
     const nameSearchUrl = `http://localhost:8088/api/authors?name=MariaTest_${uniqueId}`;

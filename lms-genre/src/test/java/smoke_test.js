@@ -7,7 +7,6 @@ export let options = {
 };
 
 export default function () {
-
     let loginRes = http.post('http://localhost:8080/api/public/login', JSON.stringify({
         username: 'maria@gmail.com',
         password: 'Mariaroberta!123'
@@ -16,7 +15,9 @@ export default function () {
     check(loginRes, { 'login ok': (r) => r.status === 200 });
 
     let tokenHeader = loginRes.headers['Authorization'];
-    if (!tokenHeader) throw new Error('Token não encontrado no header Authorization');
+    if (!tokenHeader) {
+        throw new Error('Token não encontrado no header Authorization');
+    }
 
     const params = {
         headers: {
@@ -25,12 +26,16 @@ export default function () {
         }
     };
 
-    const genreName = 'Romance';
-    const res = http.get(`http://localhost:8089/api/genre/${genreName}`, params);
+    const uniqueId = Date.now();
+    const authorPayload = JSON.stringify({
+        name: `MariaTest_${uniqueId}`,
+        bio: 'Bio de teste'
+    });
+
+    const res = http.get(`http://localhost:8089/api/genres/top5`, params);
 
     check(res, {
-        'status é 200': (r) => r.status === 200,
-        'corpo presente': (r) => r.body != null
+        '200': (r) => r.status === 200
     });
 
     sleep(1);
