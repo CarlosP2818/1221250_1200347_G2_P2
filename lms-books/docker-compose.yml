@@ -1,6 +1,6 @@
 services:
     lmsbooks_1:
-        image: lmsbooks:latest
+        image: ${DOCKER_IMAGE:-cralos062/lms-books:latest}
         container_name: books-service
         build:
             context: .
@@ -13,13 +13,25 @@ services:
             SPRING_DATA_MONGODB_URI: mongodb://mongoadmin:48aed78edc140a47a9f5d53a@mongo_books:27017/books_1?authSource=admin
             SPRING_RABBITMQ_HOST: rabbitmq
             SPRING_RABBITMQ_PORT: 5672
+            FEATURE_MAINTENANCE_KILLSWITCH: ${KILLSWITCH_ACTIVE:-false}
+            DARKLAUNCH_SECRET_HEADER: X-LMS-Beta-Access
 
             FILE_UPLOAD_DIR: uploads
 
         networks:
-            - lms_network
-        volumes:
-            - uploaded_files_volume_1:/tmp
+            lms_network:
+                aliases:
+                    - books-service
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.readers-${COLOR:-blue}.rule=PathPrefix(`/api/readers`)"
+            - "traefik.http.services.readers-${COLOR:-blue}.loadbalancer.server.port=8090"
+        healthcheck:
+            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/actuator/health" ]
+            interval: 15s
+            timeout: 5s
+            retries: 5
+            start_period: 60s # Aumentado para dar tempo à app de arrancar após a BD
 
     mongo_books:
         image: mongo:6
@@ -34,7 +46,16 @@ services:
         volumes:
             - mongo_books_data:/data/db
         networks:
-            - lms_network
+            lms_network:
+                aliases:
+                    - mongo_books
+        healthcheck:
+            # O 'pg_isready' é o comando padrão, mas adicionamos o -d readers_1
+            test: [ "CMD-SHELL", "pg_isready -U postgres -d readers_1" ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 30s # Crucial: Dá 30 segundos ao Postgres para criar os ficheiros iniciais no volume
 
 networks:
     lms_network:

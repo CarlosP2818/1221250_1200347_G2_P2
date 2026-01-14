@@ -10,7 +10,7 @@ export default function () {
 
     // --- ENV (vindos do Jenkins) ---
     const AUTH_URL = __ENV.AUTH_URL || 'http://localhost:8080';
-    const AUTHORS_URL = __ENV.AUTHORS_URL || 'http://localhost:8087';
+    const BOOKS_URL = __ENV.BOOKS_URL || 'http://localhost:8087';
     const USERNAME = __ENV.USERNAME || 'maria@gmail.com';
     const PASSWORD = __ENV.PASSWORD || 'Mariaroberta!123';
     const killswitchActive = __ENV.KILLSWITCH_ACTIVE === 'true';
@@ -38,7 +38,7 @@ export default function () {
 
     // --- Teste Kill Switch ---
     const res = http.get(
-        `${AUTHORS_URL}/api/books/TEST_KILLSWITCH`,
+        `${BOOKS_URL}/api/books/TEST_KILLSWITCH`,
         params
     );
 

@@ -1,6 +1,9 @@
 services:
     genre-service:
         image: ${DOCKER_IMAGE:-cralos062/lms-genre:latest}
+        container_name: genre-service
+        build:
+            context: .
         ports:
             - "${HOST_PORT:-8089}:8089"
         depends_on:
@@ -18,6 +21,8 @@ services:
             lms_network:
                 aliases:
                     - genre-service
+        volumes:
+            - uploaded_files_volume_1:/tmp
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.genre-${COLOR:-blue}-router.rule=PathPrefix(`/api/genres`)"
@@ -63,3 +68,4 @@ networks:
 
 volumes:
     mongo_data:
+    uploaded_files_volume_1:

@@ -10,10 +10,10 @@ export default function () {
 
     // --- ENV (vindos do Jenkins) ---
     const AUTH_URL = __ENV.AUTH_URL || 'http://localhost:8080';
-    const AUTHORS_URL = __ENV.AUTHORS_URL || 'http://localhost:8088';
+    const GENRE_URL = __ENV.GENRE_URL || 'http://localhost:8089';
     const USERNAME = __ENV.USERNAME || 'maria@gmail.com';
     const PASSWORD = __ENV.PASSWORD || 'Mariaroberta!123';
-    const KILLSWITCH_ACTIVE = __ENV.KILLSWITCH_ACTIVE === true;
+    const killswitchActive = __ENV.KILLSWITCH_ACTIVE === 'true';
 
     // --- Login ---
     const loginRes = http.post(
@@ -38,11 +38,11 @@ export default function () {
 
     // --- Teste Kill Switch ---
     const res = http.get(
-        `${AUTHORS_URL}/api/genres/top5/TEST_KILLSWITCH`,
+        `${GENRE_URL}/api/genres/top5`,
         params
     );
 
-    if (KILLSWITCH_ACTIVE) {
+    if (killswitchActive) {
         check(res, {
             'Kill Switch ativo → 503': (r) => r.status === 503,
         });
@@ -52,7 +52,7 @@ export default function () {
         });
     }
 
-    console.log(`KILLSWITCH_ACTIVE=${KILLSWITCH_ACTIVE}`);
+    console.log(`KILLSWITCH_ACTIVE=${killswitchActive}`);
     console.log(`Status recebido: ${res.status}`);
     console.log(`Body: ${res.body}`);
 
