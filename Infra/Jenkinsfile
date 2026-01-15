@@ -13,7 +13,7 @@ pipeline {
                         'lms-authnusers': 'usersnauth',
                         'lms-reader': 'odsoft-p2-readers',
                         'lms-books': 'odsoft-p2-books',
-                        'lms-authors': 'odsoft-p2-authors'
+                        'lms-authors': 'odsoft-p2-authors',
                         'lms-genre': 'odsoft-p2-genre'
                     ]
 
