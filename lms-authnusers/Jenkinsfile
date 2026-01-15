@@ -96,6 +96,7 @@ pipeline {
                                 }
                             }
                         }
+                        env.ENV_TYPE = (params.BRANCH == 'staging' || params.BRANCH == 'main') ? "STAGING" : "DEV"
                     }
                 }
             }
@@ -151,6 +152,9 @@ pipeline {
                }
 
         stage('Smoke Tests') {
+            when {
+                expression { params.BRANCH == 'dev' || params.BRANCH == 'staging'}
+            }
             steps {
                 dir('lms-authnusers') {
                     script {
@@ -163,6 +167,21 @@ pipeline {
                 }
             }
         }
+
+        stage('Load Tests') {
+            when {
+                expression { params.BRANCH == 'staging' || params.BRANCH == 'main' }
+            }
+            steps {
+                dir('lms-authnusers') {
+                    script {
+                        echo "--- Executando Load Tests (Carga) em STAGING ---"
+                        sh "docker run --rm --network host -i loadimpact/k6 run - < load_test.js -e TARGET_URL='http://localhost:${env.NEXT_PORT}'"
+                    }
+                }
+            }
+        }
+
 
         stage('Switch Traffic & Cleanup') {
             steps {

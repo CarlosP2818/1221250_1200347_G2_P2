@@ -22,6 +22,7 @@ pipeline {
                     // 2. Verificar cada pasta e disparar o build correspondente
                     services.each { folder, jobName ->
                         if (changedFiles.any { it.startsWith(folder + "/") }) {
+                            echo "Branch detetada no Orchestrator: ${env.BRANCH_NAME}"
                             echo "Alteração detetada em: ${folder}. A disparar ${jobName}..."
                             build job: jobName, wait: false, parameters: [string(name: 'BRANCH', value: env.BRANCH_NAME ?: 'main')]
                             triggered = true
