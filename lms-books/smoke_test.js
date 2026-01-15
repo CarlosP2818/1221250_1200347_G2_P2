@@ -3,7 +3,7 @@ import { check, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
 
 // Carregar livros do JSON (SharedArray retorna objetos congelados)
-const book_load_test = new SharedArray('books', function () {
+const smoke_test = new SharedArray('books', function () {
     return JSON.parse(open('./books.json'));
 });
 
@@ -56,7 +56,7 @@ export default function () {
         }
     };
 
-    const bookOriginal = book_load_test[Math.floor(Math.random() * book_load_test.length)];
+    const bookOriginal = smoke_test[Math.floor(Math.random() * smoke_test.length)];
     const book = JSON.parse(JSON.stringify(bookOriginal)); // cria um clone mutável
 
     // 3. Adiciona ISBN aleatório
