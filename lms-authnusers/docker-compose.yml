@@ -27,7 +27,6 @@ services:
 
             # Router único
             - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
-            - "traefik.http.routers.users.entrypoints=web"
 
             # Service dinâmico (blue / green)
             - "traefik.http.routers.users.service=users-${COLOR}"
