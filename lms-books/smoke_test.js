@@ -4,7 +4,7 @@ import { SharedArray } from 'k6/data';
 
 // Carregar livros do JSON (SharedArray retorna objetos congelados)
 const load_test = new SharedArray('books', function () {
-    return JSON.parse(open('./books.json'));
+    return JSON.parse(open('books.json'));
 });
 
 export let options = {
