@@ -8,8 +8,11 @@ const load_test = new SharedArray('books', function () {
 });
 
 export let options = {
-    vus: 1,
-    duration: '30s',
+    stages: [
+        { duration: '30s', target: 10 },  // subir VUs
+        { duration: '1m', target: 10 },   // manter VUs
+        { duration: '30s', target: 0 },   // descer VUs
+    ],
 };
 
 // Função simples para gerar ISBN-13 válido aleatório

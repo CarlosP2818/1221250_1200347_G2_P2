@@ -39,7 +39,7 @@ services:
         image: mongo:6
         restart: unless-stopped
         ports:
-            - "27019:27019"
+            - "27019:27017"
         environment:
             MONGO_INITDB_ROOT_USERNAME: mongoadmin
             MONGO_INITDB_ROOT_PASSWORD: 48aed78edc140a47a9f5d53a
