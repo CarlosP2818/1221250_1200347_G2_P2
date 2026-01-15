@@ -26,13 +26,7 @@ services:
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.genre-${COLOR:-blue}-router.rule=PathPrefix(`/api/genres`)"
-            - "traefik.http.routers.genre-${COLOR:-blue}-router.entrypoints=web"
-            - "traefik.http.routers.genre-${COLOR:-blue}-router.service=genre-canary-service"
-
-            # Lógica de Pesos para Canary
-            - "traefik.http.services.genre-canary-service.loadbalancer.weighted.services.genre-${COLOR:-blue}-backend@docker"
-            - "traefik.http.services.genre-canary-service.loadbalancer.services.genre-${COLOR:-blue}-backend@docker.weight=${WEIGHT:-0}"
-            - "traefik.http.services.genre-${COLOR:-blue}-backend@docker.loadbalancer.server.port=8089"
+            - "traefik.http.services.readers-${COLOR:-blue}.loadbalancer.server.port=8089"
 
         healthcheck:
             test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8089/actuator/health" ]

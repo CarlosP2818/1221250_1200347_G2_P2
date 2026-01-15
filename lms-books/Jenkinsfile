@@ -1,0 +1,200 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'M3'
+    }
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'master', description: 'Branch a construir')
+    }
+
+    environment {
+        DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials'
+        DOCKER_IMAGE_NAME = 'lms-books'
+        DOCKER_NAMESPACE = 'cralos062'
+        IMAGE_FULL_NAME = "${DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Resolve o erro de safe.directory para o Git
+                sh 'git config --global --add safe.directory "*"'
+                checkout scm
+            }
+        }
+
+        stage('Build & Unit Tests') {
+            steps {
+                dir('lms-books') {
+                    sh 'mvn clean test'
+                }
+            }
+        }
+
+        stage('Static Analysis & Mutation') {
+            parallel {
+                stage('SpotBugs') {
+                    steps {
+                        dir('lms-books') {
+                            sh 'mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.6.2:spotbugs'
+                        }
+                    }
+                }
+                stage('Pitest') {
+                    steps {
+                        dir('lms-books') {
+                            sh 'mvn org.pitest:pitest-maven:mutationCoverage'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Package Artifact') {
+            steps {
+                dir('lms-books') {
+                    sh 'mvn package -DskipTests'
+                    archiveArtifacts artifacts: 'target/*.jar'
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        def shortCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                        env.BUILD_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_REGISTRY_CREDENTIALS) {
+                            def customImage = docker.build("${IMAGE_FULL_NAME}:${env.BUILD_TAG}")
+                            customImage.push("${env.BUILD_TAG}")
+                            customImage.push("latest")
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Blue-Green Deploy') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        // Detecta qual a cor ativa baseada no nome do container
+                        def isGreenActive = sh(script: "docker ps --format '{{.Names}}' | grep books-green || true", returnStdout: true).trim()
+                        env.ACTIVE_COLOR = isGreenActive ? "green" : "blue"
+                        env.NEXT_COLOR = isGreenActive ? "blue" : "green"
+
+                        // Portas do Books: 30087 (Blue) e 30088 (Green)
+                        env.NEXT_PORT = (env.NEXT_COLOR == "blue") ? "30087" : "30088"
+                        // Porta do MongoDB para evitar conflitos: 27017 (Blue) e 27018 (Green)
+                        env.NEXT_MONGO_PORT = (env.NEXT_COLOR == "blue") ? "27017" : "27018"
+
+                        echo "Ativo: ${env.ACTIVE_COLOR} | Deploying Books: ${env.NEXT_COLOR} na porta ${env.NEXT_PORT}"
+
+                        withEnv([
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "MONGO_PORT=${env.NEXT_MONGO_PORT}"
+                        ]) {
+                            sh "docker network create lms_network || true"
+
+                            // Cleanup preventivo e sobe a nova versão com projeto isolado (-p)
+                            sh "docker compose -p books-${env.NEXT_COLOR} down -v || true"
+                            sh "docker compose -p books-${env.NEXT_COLOR} up -d"
+
+                            echo "--- Aguardando Health Check do Books (${env.NEXT_COLOR}) ---"
+                            timeout(time: 5, unit: 'MINUTES') {
+                                waitUntil {
+                                    def containerId = sh(script: "docker compose -p books-${env.NEXT_COLOR} ps -q books", returnStdout: true).trim()
+                                    if (!containerId) return false
+                                    def health = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerId}", returnStdout: true).trim()
+                                    return (health == "healthy")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Verify Strategies (k6)') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        def containerName = sh(script: "docker ps --filter 'name=books-${env.NEXT_COLOR}' --format '{{.Names}}' | head -n 1", returnStdout: true).trim()
+
+                        echo "--- Validando Kill Switch no container: ${containerName} ---"
+
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=true",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "MONGO_PORT=${env.NEXT_MONGO_PORT}",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        ]) {
+                            sh "docker compose -p books-${env.NEXT_COLOR} up -d --no-deps books"
+                            sleep 10
+                            // O k6 usa a porta interna 8087
+                            sh "docker run --rm --network lms_network -i loadimpact/k6 run - < verify_strategies.js -e TARGET_URL='http://${containerName}:8087'"
+                        }
+
+                        echo "--- Restaurando Books (Kill Switch OFF) ---"
+                        withEnv([
+                            "KILLSWITCH_ACTIVE=false",
+                            "COLOR=${env.NEXT_COLOR}",
+                            "HOST_PORT=${env.NEXT_PORT}",
+                            "MONGO_PORT=${env.NEXT_MONGO_PORT}",
+                            "DOCKER_IMAGE=${IMAGE_FULL_NAME}:${env.BUILD_TAG}"
+                        ]) {
+                            sh "docker compose -p books-${env.NEXT_COLOR} up -d --no-deps books"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Manual Approval') {
+            steps {
+                input message: "Books ${env.NEXT_COLOR} validado. Deseja promover e desligar ${env.ACTIVE_COLOR}?", ok: "Promover"
+            }
+        }
+
+        stage('Smoke Tests') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        echo "--- Smoke Tests na porta host ${env.NEXT_PORT} ---"
+                        sh "docker run --rm --network host -i loadimpact/k6 run - < smoke_test.js -e TARGET_URL='http://localhost:${env.NEXT_PORT}/api/books'"
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup Old Version') {
+            steps {
+                script {
+                    echo "--- Removendo versão antiga: ${env.ACTIVE_COLOR} ---"
+                    dir('lms-books') {
+                        sh "docker compose -p books-${env.ACTIVE_COLOR} down || true"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                echo "--- Falha no Deploy de Books. Limpando... ---"
+                dir('lms-books') {
+                    sh "docker compose -p books-${env.NEXT_COLOR} down || true"
+                }
+            }
+        }
+        always { cleanWs() }
+    }
+}
