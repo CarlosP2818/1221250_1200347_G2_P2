@@ -180,7 +180,23 @@ pipeline {
                 dir('lms-authnusers') {
                     sh """
                         docker run --rm --network lms_network -i loadimpact/k6 run - < smoke_test.js \
-                        -e AUTH_URL="http://traefik/api/users/login"
+                        -e AUTH_URL="http://localhost:${env.NEXT_PORT}/api/public/login"
+                    """
+                }
+            }
+        }
+
+        stage('Load Tests (k6)') {
+            when {
+                expression { params.BRANCH == 'staging' || params.BRANCH == 'main' }
+            }
+            steps {
+                dir('lms-authnusers') {
+                    echo "--- Executando Load Tests via Traefik ---"
+
+                    sh """
+                        docker run --rm --network lms_network -i loadimpact/k6 run - < load_test.js \
+                        -e AUTH_URL="http://localhost:${env.NEXT_PORT}/api/public/login"
                     """
                 }
             }
