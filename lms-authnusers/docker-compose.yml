@@ -3,12 +3,11 @@ version: "3.9"
 services:
     users:
         image: ${DOCKER_IMAGE:-cralos062/lms-authnusers:latest}
-        # container_name removido para não haver conflito durante o swap Blue/Green
-        ports:
-            - "${HOST_PORT:-8080}:8080"
+
         depends_on:
             postgres_users:
                 condition: service_healthy
+
         environment:
             SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_users:5432/users_1
             SPRING_DATASOURCE_USERNAME: postgres
@@ -17,23 +16,29 @@ services:
             SPRING_RABBITMQ_PORT: 5672
             FEATURE_MAINTENANCE_KILLSWITCH: ${KILLSWITCH_ACTIVE:-false}
             DARKLAUNCH_SECRET_HEADER: X-LMS-Beta-Access
+
         networks:
             lms_network:
                 aliases:
-                    - users-service # O Readers usa este nome para comunicar
+                    - users-service
+
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.users-${COLOR:-blue}.rule=PathPrefix(`/api/users`)"
-            - "traefik.http.services.users-${COLOR:-blue}.loadbalancer.server.port=8080"
+
+            # Router único
+            - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
+            - "traefik.http.routers.users.entrypoints=web"
+
+            # Service dinâmico (blue / green)
+            - "traefik.http.routers.users.service=users-${COLOR}"
+            - "traefik.http.services.users-${COLOR}.loadbalancer.server.port=8080"
+
         healthcheck:
-            test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+            test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
             interval: 10s
             timeout: 5s
             retries: 5
             start_period: 40s
-        deploy:
-            update_config:
-                order: start-first
 
     postgres_users:
         image: postgres:18
@@ -49,7 +54,7 @@ services:
                 aliases:
                     - postgres_users
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
             interval: 10s
 
 networks:
