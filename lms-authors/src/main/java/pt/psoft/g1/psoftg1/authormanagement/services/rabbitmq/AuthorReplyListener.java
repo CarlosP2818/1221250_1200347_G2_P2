@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.impl.mongo.MongoDataOutboxEventRepo;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.services.AuthorInnerRequest;
-import pt.psoft.g1.psoftg1.authormanagement.services.AuthorService;
 import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
+import pt.psoft.g1.psoftg1.authormanagement.services.command.AuthorCommandService;
 import pt.psoft.g1.psoftg1.authormanagement.services.rabbitmq.events.AuthorFoundReply;
 import pt.psoft.g1.psoftg1.authormanagement.services.rabbitmq.events.CreateBookEvent;
 
@@ -19,7 +19,7 @@ import java.util.List;
 public class AuthorReplyListener {
 
     @Autowired
-    private AuthorService authorService;
+    private AuthorCommandService authorService;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;

@@ -1,23 +1,28 @@
-package pt.psoft.g1.psoftg1.authormanagement.services;
+package pt.psoft.g1.psoftg1.authormanagement.services.command;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import pt.psoft.g1.psoftg1.authormanagement.api.BookShortView;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.OutboxEventRepository;
+import pt.psoft.g1.psoftg1.authormanagement.services.AuthorMapper;
+import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
+import pt.psoft.g1.psoftg1.authormanagement.services.RabbitMQPublisher;
+import pt.psoft.g1.psoftg1.authormanagement.services.UpdateAuthorRequest;
+import pt.psoft.g1.psoftg1.authormanagement.services.query.AuthorQueryService;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AuthorServiceImpl implements AuthorService {
+public class AuthorCommandServiceImpl implements AuthorCommandService{
+
+    private final AuthorQueryService authorQueryService;
     private final AuthorRepository authorRepository;
     private final AuthorMapper mapper;
     private final PhotoRepository photoRepository;
@@ -26,24 +31,9 @@ public class AuthorServiceImpl implements AuthorService {
     private final OutboxEventRepository tempAuthorRepository;
 
     @Override
-    public Iterable<Author> findAll() {
-        return authorRepository.findAll();
-    }
-
-    @Override
-    public Optional<Author> findByAuthorNumber(final String authorNumber) {
-        return authorRepository.findByAuthorNumber(authorNumber);
-    }
-
-    @Override
-    public List<Author> findByName(String name) {
-        return authorRepository.searchByNameNameStartsWith(name);
-    }
-
-    @Override
     public Author partialUpdate(final String authorNumber, final UpdateAuthorRequest request, final long desiredVersion) {
 
-        Author author = findByAuthorNumber(authorNumber)
+        Author author = authorQueryService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException("Cannot update an object that does not exist"));
 
         MultipartFile photo = request.getPhoto();
@@ -58,10 +48,6 @@ public class AuthorServiceImpl implements AuthorService {
 
     }
 
-    @Override
-    public List<BookShortView> findBooksByAuthorNumber(String authorNumber) {
-        return List.of();
-    }
 
     @Override
     public OutboxEventMongo createTempAuthor(String name, String bio, UUID sagaId) {

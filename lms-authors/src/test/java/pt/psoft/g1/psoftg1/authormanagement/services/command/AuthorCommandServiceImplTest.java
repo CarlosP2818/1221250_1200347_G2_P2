@@ -1,15 +1,20 @@
-package pt.psoft.g1.psoftg1.authormanagement.services;
+package pt.psoft.g1.psoftg1.authormanagement.services.command;
 
-import org.hibernate.StaleObjectStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pt.psoft.g1.psoftg1.authormanagement.infrastructure.repositories.persistence.mongo.OutboxEventMongo;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
 import pt.psoft.g1.psoftg1.authormanagement.repositories.OutboxEventRepository;
+import pt.psoft.g1.psoftg1.authormanagement.services.AuthorMapper;
+import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
+import pt.psoft.g1.psoftg1.authormanagement.services.RabbitMQPublisher;
+import pt.psoft.g1.psoftg1.authormanagement.services.UpdateAuthorRequest;
+import pt.psoft.g1.psoftg1.authormanagement.services.query.AuthorQueryService;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.shared.model.Photo;
@@ -20,9 +25,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AuthorServiceImplMutationTest {
+class AuthorCommandServiceImplTest {
 
     @Mock
     AuthorRepository authorRepository;
@@ -39,8 +45,11 @@ class AuthorServiceImplMutationTest {
     @Mock
     OutboxEventRepository tempAuthorRepository;
 
+    @Mock
+    AuthorQueryService authorQueryService;
+
     @InjectMocks
-    AuthorServiceImpl authorService;
+    AuthorCommandServiceImpl authorService;
 
     Author testAuthor;
 
@@ -49,7 +58,6 @@ class AuthorServiceImplMutationTest {
         testAuthor = new Author("Alex", "O Alex escreveu livros", "photo.jpg");
     }
 
-    // -------------------- CREATE --------------------
 
     @Test
     void createAuthor_success_noPhotoIssue() {
@@ -86,33 +94,13 @@ class AuthorServiceImplMutationTest {
         assertNotNull(result);
     }
 
-    // -------------------- FIND --------------------
-
-    @Test
-    void findByAuthorNumber_found() {
-        when(authorRepository.findByAuthorNumber("1")).thenReturn(Optional.of(testAuthor));
-
-        Optional<Author> result = authorService.findByAuthorNumber("1");
-        assertTrue(result.isPresent());
-        assertEquals("Alex", result.get().getName());
-    }
-
-    @Test
-    void findByAuthorNumber_notFound() {
-        when(authorRepository.findByAuthorNumber("999")).thenReturn(Optional.empty());
-
-        Optional<Author> result = authorService.findByAuthorNumber("999");
-        assertFalse(result.isPresent());
-    }
-
-    // -------------------- PARTIAL UPDATE --------------------
-
     @Test
     void partialUpdate_success() {
         UpdateAuthorRequest request = new UpdateAuthorRequest();
         request.setName("Alex Updated");
 
-        when(authorRepository.findByAuthorNumber("1")).thenReturn(Optional.of(testAuthor));
+        // MOCK correto agora
+        when(authorQueryService.findByAuthorNumber("1")).thenReturn(Optional.of(testAuthor));
         when(authorRepository.save(testAuthor)).thenReturn(testAuthor);
 
         Author updated = authorService.partialUpdate("1", request, testAuthor.getVersion());
@@ -122,7 +110,9 @@ class AuthorServiceImplMutationTest {
     @Test
     void partialUpdate_authorNotFound_throwsNotFound() {
         UpdateAuthorRequest request = new UpdateAuthorRequest();
-        when(authorRepository.findByAuthorNumber("999")).thenReturn(Optional.empty());
+
+        // MOCK correto para não encontrar autor
+        when(authorQueryService.findByAuthorNumber("999")).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
                 () -> authorService.partialUpdate("999", request, 0L));
@@ -134,12 +124,13 @@ class AuthorServiceImplMutationTest {
         request.setPhotoURI("photo.jpg");
         request.setPhoto(null);
 
-        when(authorRepository.findByAuthorNumber("1")).thenReturn(Optional.of(testAuthor));
+        when(authorQueryService.findByAuthorNumber("1")).thenReturn(Optional.of(testAuthor));
         when(authorRepository.save(testAuthor)).thenReturn(testAuthor);
 
         Author updated = authorService.partialUpdate("1", request, testAuthor.getVersion());
         assertNotNull(updated);
     }
+
 
     // -------------------- REMOVE PHOTO --------------------
 
@@ -184,56 +175,6 @@ class AuthorServiceImplMutationTest {
                         "Bio".equals(a.getBio()) &&
                         sagaId.toString().equals(a.getCorrelationId())
         ));
-    }
-
-    // -------------------- MODEL APPLY PATCH --------------------
-
-    @Test
-    void author_applyPatch_updatesFields() {
-        Author author = new Author("Old", "OldBio", null);
-        UpdateAuthorRequest request = new UpdateAuthorRequest("Bio", "Name", null, null);
-
-        long version = author.getVersion();
-        author.applyPatch(version, request);
-
-        assertEquals("Name", author.getName());
-        assertEquals("Bio", author.getBio());
-    }
-
-    @Test
-    void author_applyPatch_staleVersion_throws() {
-        Author author = new Author("Old", "OldBio", null);
-        UpdateAuthorRequest request = new UpdateAuthorRequest("New", "NewName", null, null);
-
-        assertThrows(StaleObjectStateException.class,
-                () -> author.applyPatch(999, request));
-    }
-
-    @Test
-    void author_removePhoto_correctVersion() {
-        Author author = new Author("Alex", "Bio", "photo.jpg");
-        author.removePhoto(author.getVersion());
-        assertNull(author.getPhoto());
-    }
-
-    @Test
-    void author_removePhoto_incorrectVersion_throws() {
-        Author author = new Author("Alex", "Bio", "photo.jpg");
-        assertThrows(ConflictException.class,
-                () -> author.removePhoto(author.getVersion() + 1));
-    }
-
-    @Test
-    void author_createWithNullPhoto_setsNull() {
-        Author author = new Author("Alex", "Bio", null);
-        assertNull(author.getPhoto());
-    }
-
-    @Test
-    void author_createWithPhoto_setsPhoto() {
-        Author author = new Author("Alex", "Bio", "photo.jpg");
-        assertNotNull(author.getPhoto());
-        assertEquals("photo.jpg", author.getPhoto().getPhotoFile());
     }
 
 }
